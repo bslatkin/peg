@@ -1,4 +1,4 @@
-import re
+import grammar
 
 
 
@@ -6,6 +6,12 @@ class Node:
 	def __init__(self, value, remaining):
 		self.value = value
 		self.remaining = remaining
+
+	def __repr__(self):
+		return (
+			f'{self.__class__.__name__}'
+			f'(value={self.value!r}, '
+			f'len(remaining)={len(self.remaining)})')
 
 
 class StrNode(Node):
@@ -37,34 +43,12 @@ class NotNode(Node):
 
 
 class RuleNode(Node):
-	pass
+	def __init__(self, rule, value, remaining):
+		super().__init__(value, remaining)
+		self.rule = rule
 
-
-def parse(rules, buffer):
-	for rule in rules:
-		node = descend(rule, buffer)
-		if node is not None:
-			return node
-
-	return None
-
-
-VISITORS = {
-	And: descend_and,
-	Choice: descend_choice,
-	Expr: descend_expr,
-	Not: descend_not,
-	OneOrMore: descend_one_or_more,
-	Optional: descend_optional,
-	Rule: descend_rule,
-	str: descend_str,
-	ZeroOrMore: descend_zero_or_more,
-}
-
-
-def descend(item, buffer):
-	visitor = VISITORS[type(item)]
-	return visitor(item, buffer)
+	def __repr__(self):
+		return f'{self.rule.symbol}({self.value!r})'
 
 
 def descend_rule(rule, buffer):
@@ -72,50 +56,41 @@ def descend_rule(rule, buffer):
 	if node is None:
 		return None
 
-	return RuleNode(rule, buffer)
+	return RuleNode(rule, node, node.remaining)
+
+
+def match_items(items, buffer):
+	found = []
+	current = buffer
+	for item in items:
+		node = descend(item, current)
+		if node is None:
+			return None
+
+		found.append(node)
+		current = node.remaining
+
+	return ExprNode(found, current)
 
 
 def descend_expr(expr, buffer):
-	found = []
-	current = buffer
-	for item in expr.items:
-		node = descend(item, curent)
-		if node is None:
-			return None
+	node = match_items(expr.items, buffer)
 
-		found.append(node)
-		current = node.remaining
+	if node is None:
+		return None
 
-	if current:
+	if node.remaining:
 		# Not all input was consumed so it doesn't match
 		return None
 
-	return ExprNode(found, current)
-
-
-def match_items(item, buffer):
-	found = []
-	current = buffer
-	for item in expr.items:
-		node = descend(item, curent)
-		if node is None:
-			return None
-
-		found.append(node)
-		current = node.remaining
-
-	if current:
-		# Not all input was consumed so it doesn't match
-		return None
-
-	return ExprNode(found, current)
+	return node
 
 
 def repeat_match_items(items, buffer):
 	found = []
 	current = buffer
-	while True:
-		node = descend_items(items, buffer)  # XXX
+	while current:
+		node = match_items(items, buffer)
 		if node is None:
 			break
 
@@ -140,15 +115,15 @@ def descend_zero_or_more(expr, buffer):
 
 
 def descend_optional(expr, buffer):
-	node = descend_items(expr.items, buffer)
+	node = match_items(expr.items, buffer)
 	if node is not None:
-		return node
+		return OptionalNode(node, node.remaining)
 
 	return OptionalNode(None, buffer)
 
 
 def descend_and(expr, buffer):
-	node = descend_items(expr.items, buffer)
+	node = match_items(expr.items, buffer)
 	if not node:
 		return None
 
@@ -156,7 +131,7 @@ def descend_and(expr, buffer):
 
 
 def descend_not(expr, buffer):
-	node = descend_items(expr.items, buffer)
+	node = match_items(expr.items, buffer)
 	if node is not None:
 		return None
 
@@ -184,4 +159,32 @@ def descend_str(expr, buffer):
 	consumed = buffer[:expr_length]
 	remaining = buffer[expr_length:]
 	return StrNode(consumed, remaining)
+
+
+VISITORS = {
+	grammar.And: descend_and,
+	grammar.Choice: descend_choice,
+	grammar.Expr: descend_expr,
+	grammar.Not: descend_not,
+	grammar.OneOrMore: descend_one_or_more,
+	grammar.Optional: descend_optional,
+	grammar.Rule: descend_rule,
+	str: descend_str,
+	grammar.ZeroOrMore: descend_zero_or_more,
+}
+
+
+def descend(item, buffer):
+	print(f'Descending: {item=}, {type(item)=} with {buffer=}')
+	visitor = VISITORS[type(item)]
+	return visitor(item, buffer)
+
+
+def parse(rules, buffer):
+	for rule in rules:
+		node = descend(rule, buffer)
+		if node is not None:
+			return node
+
+	return None
 

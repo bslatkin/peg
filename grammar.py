@@ -11,7 +11,7 @@ def repr_items(items):
 	pieces = []
 	for item in items:
 		if isinstance(item, Rule):
-			pieces.append(f'{Ref.__name__}({item.symbol!r})')
+			pieces.append(f'{item.__class__.__name__}({item.symbol!r}, ...)')
 		else:
 			pieces.append(repr(item))
 
@@ -83,7 +83,7 @@ def deref_item(rules, item):
 	assert isinstance(item, Expr)
 
 	dereferenced = [deref_item(rules, i) for i in item.items]
-	item.pieces = dereferenced
+	item.items = dereferenced
 	return item
 
 

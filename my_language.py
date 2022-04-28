@@ -36,3 +36,9 @@ MY_LANGUAGE = Language(MY_GRAMMAR)
 
 for rule in MY_LANGUAGE.rules.values():
 	print(rule)
+
+
+import parser
+
+result = parser.parse(MY_LANGUAGE.rules.values(), '1')
+print(result)
