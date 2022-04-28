@@ -40,5 +40,5 @@ for rule in MY_LANGUAGE.rules.values():
 
 import parser
 
-result = parser.parse(MY_LANGUAGE.rules.values(), '1')
-print(result)
+result = parser.parse(MY_LANGUAGE.rules.values(), '1+1')
+print(repr(result))

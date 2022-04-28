@@ -7,6 +7,15 @@ class Node:
 		self.value = value
 		self.remaining = remaining
 
+	def __str__(self):
+		if self.value is None:
+			return ''
+
+		if isinstance(self.value, (list, tuple)):
+			return ''.join(str(i) for i in self.value)
+
+		return str(self.value)
+
 	def __repr__(self):
 		return (
 			f'{self.__class__.__name__}'
@@ -48,7 +57,8 @@ class RuleNode(Node):
 		self.rule = rule
 
 	def __repr__(self):
-		return f'{self.rule.symbol}({self.value!r})'
+		return f'{self.rule.symbol}({self.value})'
+
 
 
 def descend_rule(rule, buffer):
@@ -90,7 +100,7 @@ def repeat_match_items(items, buffer):
 	found = []
 	current = buffer
 	while current:
-		node = match_items(items, buffer)
+		node = match_items(items, current)
 		if node is None:
 			break
 
