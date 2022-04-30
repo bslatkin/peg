@@ -1,30 +1,36 @@
 from grammar import *
 
 
+# Coalesce the keyword arguments in the grammar up to each rule
+# when it matches. Make sure they're not repeated or overwritten.
+# Assign these values on the final object that is handed to the
+# interpreter or code generator. Assign the keys to None that aren't
+# assigned (or maybe a special missing value or accessor).
+
 MY_GRAMMAR = {
     'Sum': Expr(
-        Ref('Product'),
+        left=Ref('Product'),
         ZeroOrMore(
-            Choice('+', '-'),
-            Ref('Product'))),
+            operator=Choice('+', '-'),
+            right=Ref('Product'))),
 
     'Product': Expr(
-        Ref('Power'),
+        left=Ref('Power'),
         ZeroOrMore(
-            Choice('*', '/'),
-            Ref('Power'))),
+            operator=Choice('*', '/'),
+            right=Ref('Power'))),
 
     'Power': Expr(
-        Ref('Value'),
+        base=Ref('Value'),
         Optional(
-            '^',
-            Ref('Power'))),
+            operator='^',
+            exponent=Ref('Power'))),
 
     'Value': Choice(
-        OneOrMore(Ref('Number')),
+        digits=OneOrMore(Ref('Number')),
         Expr(
             '(',
-            Ref('Sum'),
+            inner_sum=Ref('Sum'),
             ')')),
 
     'Number': Choice('0', '1', '2', '3', '4', '5', '6', '7', '8', '9'),
