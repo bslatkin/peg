@@ -112,6 +112,9 @@ def descend_choice(expr, buffer):
     for item in expr.items:
         node = descend(item, buffer)
         if node is not None:
+            # TODO: This needs to carry through which
+            # choice was picked so it can be acted on
+            # appropriately later in the system.
             return ParseNode(expr, node, node.remaining)
 
     return None
