@@ -2,8 +2,6 @@ from grammar import *
 
 
 MY_GRAMMAR = {
-    'Root': Ref('Sum'),
-
     'Sum': Expr(
         Ref('Product'),
         ZeroOrMore(
@@ -27,7 +25,7 @@ MY_GRAMMAR = {
             Choice('0', '1', '2', '3', '4', '5', '6', '7', '8', '9')),
         Expr(
             '(',
-            Ref('Root'),
+            Ref('Sum'),
             ')')),
 }
 
@@ -40,5 +38,12 @@ for rule in MY_LANGUAGE.rules.values():
 
 import parser
 
-result = parser.parse(MY_LANGUAGE.rules.values(), '1+1')
+result = parser.parse(MY_LANGUAGE.rules.values(), '(3^5+1)*2')
 print(repr(result))
+
+
+import syntax
+
+flat = syntax.coalesce(result)
+
+breakpoint()

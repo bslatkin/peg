@@ -51,13 +51,15 @@ class NotNode(Node):
     pass
 
 
+# TODO: Make all Nodes have the first parameter be the
+# node type and then pull through the grammar class there.
 class RuleNode(Node):
     def __init__(self, rule, value, remaining):
         super().__init__(value, remaining)
         self.rule = rule
 
     def __repr__(self):
-        return f'{self.rule.symbol}({self.value})'
+        return f'{self.rule.symbol}({self.value!r})'
 
 
 
@@ -188,4 +190,3 @@ def parse(rules, buffer):
             return node
 
     return None
-
