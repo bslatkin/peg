@@ -2,8 +2,9 @@ import grammar
 
 
 
-class Node:
-    def __init__(self, value, remaining):
+class ParseNode:
+    def __init__(self, source, value, remaining):
+        self.source = source
         self.value = value
         self.remaining = remaining
 
@@ -17,50 +18,14 @@ class Node:
         return str(self.value)
 
     def __repr__(self):
+        name = f'{self.source.__class__.__name__}('
+        if isinstance(self.source, grammar.Rule):
+            name = f'{name}{self.source.symbol}, '
+
         return (
-            f'{self.__class__.__name__}'
+            f'{name}'
             f'(value={self.value!r}, '
             f'len(remaining)={len(self.remaining)})')
-
-
-class StrNode(Node):
-    pass
-
-
-class ExprNode(Node):
-    pass
-
-
-class OneOrMoreNode(Node):
-    pass
-
-
-class ZeroOrMoreNode(Node):
-    pass
-
-
-class OptionalNode(Node):
-    pass
-
-
-class AndNode(Node):
-    pass
-
-
-class NotNode(Node):
-    pass
-
-
-# TODO: Make all Nodes have the first parameter be the
-# node type and then pull through the grammar class there.
-class RuleNode(Node):
-    def __init__(self, rule, value, remaining):
-        super().__init__(value, remaining)
-        self.rule = rule
-
-    def __repr__(self):
-        return f'{self.rule.symbol}({self.value!r})'
-
 
 
 def descend_rule(rule, buffer):
@@ -68,10 +33,10 @@ def descend_rule(rule, buffer):
     if node is None:
         return None
 
-    return RuleNode(rule, node, node.remaining)
+    return ParseNode(rule, node, node.remaining)
 
 
-def match_items(items, buffer):
+def match_items(source, items, buffer):
     found = []
     current = buffer
     for item in items:
@@ -82,18 +47,20 @@ def match_items(items, buffer):
         found.append(node)
         current = node.remaining
 
-    return ExprNode(found, current)
+    return ParseNode(source, found, current)
 
 
 def descend_expr(expr, buffer):
-    return match_items(expr.items, buffer)
+    return match_items(expr, expr.items, buffer)
 
 
-def repeat_match_items(items, buffer):
+def repeat_match_items(source, items, buffer):
     found = []
     current = buffer
     while current:
-        node = match_items(items, current)
+        # XXX This source is wrong, there should be an inner
+        # Expr instance that the OneOrMore instance wraps.
+        node = match_items(source, items, current)
         if node is None:
             break
 
@@ -104,48 +71,48 @@ def repeat_match_items(items, buffer):
 
 
 def descend_one_or_more(expr, buffer):
-    found, remaining = repeat_match_items(expr.items, buffer)
+    found, remaining = repeat_match_items(expr, expr.items, buffer)
 
     if not found:
         return None
 
-    return OneOrMoreNode(found, remaining)
+    return ParseNode(expr, found, remaining)
 
 
 def descend_zero_or_more(expr, buffer):
-    found, remaining = repeat_match_items(expr.items, buffer)
-    return ZeroOrMoreNode(found, remaining)
+    found, remaining = repeat_match_items(expr, expr.items, buffer)
+    return ParseNode(expr, found, remaining)
 
 
 def descend_optional(expr, buffer):
-    node = match_items(expr.items, buffer)
+    node = match_items(expr, expr.items, buffer)
     if node is not None:
-        return OptionalNode(node, node.remaining)
+        return ParseNode(expr, node, node.remaining)
 
-    return OptionalNode(None, buffer)
+    return ParseNode(expr, None, buffer)
 
 
 def descend_and(expr, buffer):
-    node = match_items(expr.items, buffer)
-    if not node:
+    node = match_items(expr, expr.items, buffer)
+    if node is None:
         return None
 
-    return AndNode(node, buffer)
+    return ParseNode(expr, node, buffer)
 
 
 def descend_not(expr, buffer):
-    node = match_items(expr.items, buffer)
+    node = match_items(expr, expr.items, buffer)
     if node is not None:
         return None
 
-    return NotNode(None, buffer)
+    return ParseNode(expr, None, buffer)
 
 
 def descend_choice(expr, buffer):
     for item in expr.items:
         node = descend(item, buffer)
         if node is not None:
-            return node
+            return ParseNode(expr, node, node.remaining)
 
     return None
 
@@ -161,7 +128,7 @@ def descend_str(expr, buffer):
 
     consumed = buffer[:expr_length]
     remaining = buffer[expr_length:]
-    return StrNode(consumed, remaining)
+    return ParseNode(expr, consumed, remaining)
 
 
 VISITORS = {

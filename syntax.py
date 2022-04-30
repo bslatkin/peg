@@ -1,3 +1,4 @@
+import grammar
 import parser
 
 
@@ -37,9 +38,10 @@ def coalesce_value(value):
 def coalesce(node):
 	if node is None:
 		return None
-	elif isinstance(node, parser.RuleNode):
+	elif (isinstance(node, parser.ParseNode) and
+		  isinstance(node.source, grammar.Rule)):
 		flattened = coalesce(node.value)
-		return SyntaxNode(node.rule, flattened)
+		return SyntaxNode(node.source, flattened)
 	elif isinstance(node, list):
 		return coalesce_value(node)
 	elif isinstance(node, str):
