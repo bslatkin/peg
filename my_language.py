@@ -21,12 +21,13 @@ MY_GRAMMAR = {
             Ref('Power'))),
 
     'Value': Choice(
-        OneOrMore(
-            Choice('0', '1', '2', '3', '4', '5', '6', '7', '8', '9')),
+        OneOrMore(Ref('Number')),
         Expr(
             '(',
             Ref('Sum'),
             ')')),
+
+    'Number': Choice('0', '1', '2', '3', '4', '5', '6', '7', '8', '9'),
 }
 
 
@@ -38,7 +39,7 @@ for rule in MY_LANGUAGE.rules.values():
 
 import parser
 
-result = parser.parse(MY_LANGUAGE.rules.values(), '(2+3)')
+result = parser.parse(MY_LANGUAGE.rules.values(), '(21+35)')
 print(repr(result))
 
 
@@ -80,14 +81,30 @@ def handle_power(context, node):
 
 
 def handle_value(context, node):
-    if isinstance(node.value, str):
-        return int(node.value)
+    if not isinstance(node.value, list):
+        return context.interpret(node.value)
 
-    assert len(node.value) == 3
-    assert node.value[0] == '('
-    assert node.value[2] == ')'
+    # TODO: This is really ugly that I have to reengineer how the parser
+    # matched I'm coming back to interpret the results, when I knew full well
+    # what was happening at parse time. Instead, I should name each piece of
+    # the rule and then pull that through all the way to the end so it can be
+    # used here.
 
-    return context.interpret(node.value[1])
+    assert len(node.value) > 0
+
+    if node.value[0] == '(':
+        assert len(node.value) == 3
+        assert node.value[0] == '('
+        assert node.value[2] == ')'
+        return context.interpret(node.value[1])
+
+    else:
+        return int(''.join(context.interpret(v) for v in node.value))
+
+
+def handle_number(context, node):
+    assert isinstance(node.value, str)
+    return node.value
 
 
 def handle_str(context, node):
@@ -99,6 +116,7 @@ MY_HANDLERS = {
     'Product': handle_product,
     'Power': handle_power,
     'Value': handle_value,
+    'Number': handle_number,
     str: handle_str,
 }
 
