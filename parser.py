@@ -84,16 +84,7 @@ def match_items(items, buffer):
 
 
 def descend_expr(expr, buffer):
-    node = match_items(expr.items, buffer)
-
-    if node is None:
-        return None
-
-    if node.remaining:
-        # Not all input was consumed so it doesn't match
-        return None
-
-    return node
+    return match_items(expr.items, buffer)
 
 
 def repeat_match_items(items, buffer):
