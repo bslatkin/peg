@@ -1,6 +1,4 @@
 
-
-
 class Ref:
     def __init__(self, symbol):
         self.symbol = symbol
@@ -55,6 +53,13 @@ class Params:
 
     def assign(self, key, value):
         self.mappings[key] = value
+
+    def merge(self, other):
+        for key, value in other:
+            if isinstance(key, int):
+                key = len(self.mappings)
+            assert key not in self.mappings
+            self.assign(key, value)
 
     def __repr__(self):
         repr_string = repr_params(self)

@@ -8,15 +8,6 @@ class ParseNode:
         self.value = value
         self.remaining = remaining
 
-    def __str__(self):
-        if self.value is None:
-            return ''
-
-        if isinstance(self.value, (list, tuple)):
-            return ''.join(str(i) for i in self.value)
-
-        return str(self.value)
-
     def __repr__(self):
         name = f'{self.source.__class__.__name__}('
         if isinstance(self.source, grammar.Rule):

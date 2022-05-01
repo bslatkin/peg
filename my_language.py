@@ -50,12 +50,15 @@ import parser
 result = parser.parse(MY_LANGUAGE.rules.values(), '(21+35)')
 print(repr(result))
 
-breakpoint()
+# breakpoint()
 
 
 import syntax
 
 flat = syntax.coalesce(result)
+print(repr(flat))
+
+breakpoint()
 
 
 def handle_sum(context, node):

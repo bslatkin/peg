@@ -4,47 +4,52 @@ import parser
 
 
 class SyntaxNode:
-	def __init__(self, rule, value):
-		self.rule = rule
-		self.value = value
+    def __init__(self, rule, value):
+        self.rule = rule
+        self.value = value
 
-	def __repr__(self):
-		return (
-			f'{self.rule.symbol}('
-			f'{self.value!r})')
+    def __repr__(self):
+        return (
+            f'{self.rule.symbol}('
+            f'{self.value!r})')
 
 
-def coalesce_value(value):
-	result = []
+def coalesce_params(value):
+    result = grammar.Params()
 
-	for layered in value:
-		flattened = coalesce(layered)
-		if flattened is None:
-			continue
-		elif isinstance(flattened, list):
-			result.extend(flattened)
-		else:
-			result.append(flattened)
+    for key, other_value in value:
+        flattened = coalesce(other_value)
 
-	if not result:
-		return None
+        if flattened is None:
+            continue
 
-	if len(result) == 1:
-		return result[0]
+        result.assign(key, flattened)
 
-	return result
+    if not result:
+        return None
+
+    # xxx clean this up
+    if (len(result.mappings) == 1 and
+            0 in result.mappings):
+        return result.mappings[0]
+
+    return result
 
 
 def coalesce(node):
-	if node is None:
-		return None
-	elif (isinstance(node, parser.ParseNode) and
-		  isinstance(node.source, grammar.Rule)):
-		flattened = coalesce(node.value)
-		return SyntaxNode(node.source, flattened)
-	elif isinstance(node, list):
-		return coalesce_value(node)
-	elif isinstance(node, str):
-		return node
-	else:
-		return coalesce(node.value)
+    print(f'Coalescing: {node=}, {type(node)=}')
+    if node is None:
+        return None
+
+    if (isinstance(node, parser.ParseNode) and
+          isinstance(node.source, grammar.Rule)):
+        flattened = coalesce(node.value)
+        return SyntaxNode(node.source, flattened)
+
+    if isinstance(node, grammar.Params):
+        return coalesce_params(node)
+
+    if isinstance(node, str):
+        return node
+
+    return coalesce(node.value)
