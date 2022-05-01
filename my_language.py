@@ -10,28 +10,28 @@ from grammar import *
 MY_GRAMMAR = {
     'Sum': Expr(
         left=Ref('Product'),
-        ZeroOrMore(
+        suffix=ZeroOrMore(
             operator=Choice('+', '-'),
             right=Ref('Product'))),
 
     'Product': Expr(
         left=Ref('Power'),
-        ZeroOrMore(
+        suffix=ZeroOrMore(
             operator=Choice('*', '/'),
             right=Ref('Power'))),
 
     'Power': Expr(
         base=Ref('Value'),
-        Optional(
+        suffix=Optional(
             operator='^',
             exponent=Ref('Power'))),
 
     'Value': Choice(
         digits=OneOrMore(Ref('Number')),
-        Expr(
-            '(',
+        sub_expr=Expr(
+            left_paren='(',
             inner_sum=Ref('Sum'),
-            ')')),
+            right_paren=')')),
 
     'Number': Choice('0', '1', '2', '3', '4', '5', '6', '7', '8', '9'),
 }
@@ -41,6 +41,8 @@ MY_LANGUAGE = Language(MY_GRAMMAR)
 
 for rule in MY_LANGUAGE.rules.values():
     print(rule)
+
+breakpoint()
 
 
 import parser
