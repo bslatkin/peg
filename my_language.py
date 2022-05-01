@@ -47,7 +47,7 @@ for rule in MY_LANGUAGE.rules.values():
 
 import parser
 
-result = parser.parse(MY_LANGUAGE.rules.values(), '(21+35)')
+result = parser.parse(MY_LANGUAGE.rules.values(), '(21+35)^3')
 print(repr(result))
 
 # breakpoint()
