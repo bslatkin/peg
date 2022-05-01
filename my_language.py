@@ -42,13 +42,15 @@ MY_LANGUAGE = Language(MY_GRAMMAR)
 for rule in MY_LANGUAGE.rules.values():
     print(rule)
 
-breakpoint()
+# breakpoint()
 
 
 import parser
 
 result = parser.parse(MY_LANGUAGE.rules.values(), '(21+35)')
 print(repr(result))
+
+breakpoint()
 
 
 import syntax

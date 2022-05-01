@@ -1,4 +1,6 @@
 
+
+
 class Ref:
     def __init__(self, symbol):
         self.symbol = symbol
@@ -7,53 +9,89 @@ class Ref:
         return f'{self.__class__.__name__}({self.symbol!r})'
 
 
-def repr_expr(items, mappings):
+def repr_params(params):
     pieces = []
 
-    for item in items:
-        if isinstance(item, Rule):
-            pieces.append(f'{item.__class__.__name__}({item.symbol!r}, ...)')
+    for key, value in params:
+        if isinstance(key, int):
+            prefix = ''
         else:
-            pieces.append(f'{item!r}')
+            prefix = f'{key}='
 
-    for key, value in mappings.items():
         if isinstance(value, Rule):
             pieces.append(
-                f'{key}={value.__class__.__name__}'
+                f'{prefix}{value.__class__.__name__}'
                 f'({value.symbol!r}, ...)')
         else:
-            pieces.append(f'{key}={value!r}')
+            pieces.append(f'{prefix}{value!r}')
 
     return ', '.join(pieces)
+
+
+class Params:
+    def __init__(self):
+        self.mappings = {}
+
+    @classmethod
+    def from_list(cls, *items):
+        params = cls()
+        for index, value in enumerate(items):
+            params.assign(index, value)
+        return params
+
+    @classmethod
+    def from_dict(cls, **mappings):
+        params = cls()
+        for key, value in mappings.items():
+            params.assign(key, value)
+        return params
+
+    def __iter__(self):
+        for key, value in self.mappings.items():
+            yield key, value
+
+    def __bool__(self):
+        return bool(self.mappings)
+
+    def assign(self, key, value):
+        self.mappings[key] = value
+
+    def __repr__(self):
+        repr_string = repr_params(self)
+        return f'{self.__class__.__name__}({repr_string})'
+
 
 
 class Expr:
     def __init__(self, *items, **mappings):
         if items:
             assert not mappings
-
-        if mappings:
+            self.params = Params.from_list(*items)
+        elif mappings:
             assert not items
-
-        self.items = items
-        self.mappings = mappings
-
+            self.params = Params.from_dict(**mappings)
+        else:
+            assert False, 'Must have an item or mapping present'
 
     def __repr__(self):
-        repr_string = repr_expr(self.items, self.mappings)
+        repr_string = repr_params(self.params)
         return f'{self.__class__.__name__}({repr_string})'
-
 
 
 class Choice(Expr):
     pass
 
 
-class ZeroOrMore(Expr):
+class RepeatedExpr(Expr):
+    def __init__(self, *args, **kwargs):
+        super().__init__(Expr(*args, **kwargs))
+
+
+class ZeroOrMore(RepeatedExpr):
     pass
 
 
-class OneOrMore(Expr):
+class OneOrMore(RepeatedExpr):
     pass
 
 
@@ -75,10 +113,9 @@ class Rule:
         self.expr = expr
 
     def __repr__(self):
-        repr_string = repr_expr(self.expr.items, self.expr.mappings)
         return (
             f'{self.__class__.__name__}'
-            f'({self.symbol!r}, {repr_string})')
+            f'({self.symbol!r}, {self.expr!r})')
 
 
 def get_rule(rules, symbol):
@@ -99,15 +136,13 @@ def deref_single(rules, value):
 
     assert isinstance(value, Expr)
 
-    dereferenced_items = [deref_single(rules, i) for i in value.items]
+    derefed_params = Params()
 
-    dereferenced_mappings = {}
-    for key, other_value in value.mappings.items():
-        derefered_value = deref_single(rules, other_value)
-        dereferenced_mappings[key] = derefered_value
+    for key, other_value in value.params:
+        derefed = deref_single(rules, other_value)
+        derefed_params.assign(key, derefed)
 
-    value.items = dereferenced_items
-    value.mappings = dereferenced_mappings
+    value.params = derefed_params
 
     return value
 
@@ -129,7 +164,10 @@ def count_keywords(counts, value):
     if not isinstance(value, Expr):
         return
 
-    for key, other_value in value.mappings.items():
+    for key, other_value in value.params:
+        if isinstance(key, int):
+            continue
+
         try:
             counts[key] += 1
         except KeyError:

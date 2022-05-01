@@ -20,11 +20,11 @@ class ParseNode:
     def __repr__(self):
         name = f'{self.source.__class__.__name__}('
         if isinstance(self.source, grammar.Rule):
-            name = f'{name}{self.source.symbol}, '
+            name = f'{name}{self.source.symbol!r}, '
 
         return (
             f'{name}'
-            f'(value={self.value!r}, '
+            f'value={self.value!r}, '
             f'len(remaining)={len(self.remaining)})')
 
 
@@ -36,42 +36,49 @@ def descend_rule(rule, buffer):
     return ParseNode(rule, node, node.remaining)
 
 
-def match_items(source, items, buffer):
-    found = []
+def match_params(source, params, buffer):
+    found = grammar.Params()
     current = buffer
-    for item in items:
-        node = descend(item, current)
+
+    for key, value in params:
+        node = descend(value, current)
         if node is None:
             return None
 
-        found.append(node)
+        found.assign(key, node)
         current = node.remaining
 
     return ParseNode(source, found, current)
 
 
 def descend_expr(expr, buffer):
-    return match_items(expr, expr.items, buffer)
+    return match_params(expr, expr.params, buffer)
 
 
-def repeat_match_items(source, items, buffer):
-    found = []
+def repeat_match_params(source, params, buffer):
+    found = grammar.Params()
     current = buffer
+    index = 0
+
     while current:
-        # XXX This source is wrong, there should be an inner
-        # Expr instance that the OneOrMore instance wraps.
-        node = match_items(source, items, current)
+        node = match_params(source, params, current)
         if node is None:
             break
 
-        found.append(node)
+        found.assign(index, node)
         current = node.remaining
+        index += 1
 
     return found, current
 
 
 def descend_one_or_more(expr, buffer):
-    found, remaining = repeat_match_items(expr, expr.items, buffer)
+    pairs = list(expr.params)
+    assert len(pairs) == 1
+    index, sub_expr = pairs[0]
+    assert index == 0
+
+    found, remaining = repeat_match_params(sub_expr, sub_expr.params, buffer)
 
     if not found:
         return None
@@ -80,12 +87,17 @@ def descend_one_or_more(expr, buffer):
 
 
 def descend_zero_or_more(expr, buffer):
-    found, remaining = repeat_match_items(expr, expr.items, buffer)
+    pairs = list(expr.params)
+    assert len(pairs) == 1
+    index, sub_expr = pairs[0]
+    assert index == 0
+
+    found, remaining = repeat_match_params(sub_expr, sub_expr.params, buffer)
     return ParseNode(expr, found, remaining)
 
 
 def descend_optional(expr, buffer):
-    node = match_items(expr, expr.items, buffer)
+    node = match_params(expr, expr.params, buffer)
     if node is not None:
         return ParseNode(expr, node, node.remaining)
 
@@ -93,7 +105,7 @@ def descend_optional(expr, buffer):
 
 
 def descend_and(expr, buffer):
-    node = match_items(expr, expr.items, buffer)
+    node = match_params(expr, expr.params, buffer)
     if node is None:
         return None
 
@@ -101,7 +113,7 @@ def descend_and(expr, buffer):
 
 
 def descend_not(expr, buffer):
-    node = match_items(expr, expr.items, buffer)
+    node = match_params(expr, expr.params, buffer)
     if node is not None:
         return None
 
@@ -109,15 +121,20 @@ def descend_not(expr, buffer):
 
 
 def descend_choice(expr, buffer):
-    for item in expr.items:
-        node = descend(item, buffer)
-        if node is not None:
-            # TODO: This needs to carry through which
-            # choice was picked so it can be acted on
-            # appropriately later in the system.
-            return ParseNode(expr, node, node.remaining)
+    found = grammar.Params()
+    node = None
 
-    return None
+    for key, value in expr.params:
+        if node is None:
+            node = descend(value, buffer)
+            found.assign(key, node)
+        else:
+            found.assign(key, None)
+
+    if node is None:
+        return None
+
+    return ParseNode(expr, found, node.remaining)
 
 
 def descend_str(expr, buffer):
