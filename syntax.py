@@ -31,6 +31,8 @@ def coalesce_params(value):
         if (isinstance(flattened, grammar.Params) and
                 (flattened_list := flattened.as_list())):
             if len(flattened_list) == 1:
+                # TODO: Don't do this for any repeated nodes so they
+                # always return a list.
                 result.assign(key, flattened_list[0])
             else:
                 result.assign(key, flattened_list)
