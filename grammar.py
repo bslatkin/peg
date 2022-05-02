@@ -52,7 +52,20 @@ class Params:
         return bool(self.mappings)
 
     def assign(self, key, value):
+        assert key not in self.mappings
         self.mappings[key] = value
+
+    def get(self, key):
+        return self.mappings[key]
+
+    def get_single_value(self):
+        if len(self.mappings) != 1:
+            return None
+
+        if 0 not in self.mappings:
+            return None
+
+        return self.mappings[0]
 
     def __repr__(self):
         repr_string = repr_params(self)
