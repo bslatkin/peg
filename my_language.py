@@ -1,11 +1,6 @@
 from grammar import *
 
 
-# Coalesce the keyword arguments in the grammar up to each rule
-# when it matches. Make sure they're not repeated or overwritten.
-# Assign these values on the final object that is handed to the
-# interpreter or code generator. Assign the keys to None that aren't
-# assigned (or maybe a special missing value or accessor).
 
 MY_GRAMMAR = {
     'Sum': Expr(

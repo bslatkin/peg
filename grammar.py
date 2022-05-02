@@ -7,6 +7,7 @@ class Ref:
         return f'{self.__class__.__name__}({self.symbol!r})'
 
 
+# TODO: Move this and Params to a separate module
 def repr_params(params):
     pieces = []
 
