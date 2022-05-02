@@ -58,19 +58,34 @@ class Params:
     def get(self, key):
         return self.mappings[key]
 
+    def as_list(self):
+        result = []
+        for key, value in self:
+            if not isinstance(key, int):
+                break
+
+            result.append(value)
+
+        if not result:
+            return None
+
+        return result
+
     def get_single_value(self):
         if len(self.mappings) != 1:
             return None
 
-        if 0 not in self.mappings:
-            return None
-
-        return self.mappings[0]
+        return next(iter(self.mappings.values()))
 
     def __repr__(self):
         repr_string = repr_params(self)
         return f'{self.__class__.__name__}({repr_string})'
 
+    def __getattr__(self, key):
+        try:
+            return self.mappings.get(key)
+        except KeyError:
+            return None
 
 
 class Expr:

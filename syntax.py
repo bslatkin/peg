@@ -18,16 +18,6 @@ class SyntaxNode:
             f'{self.rule.symbol}('
             f'{repr_string})')
 
-    def __getattr__(self, key):
-        if not isinstance(self.value, grammar.Params):
-            raise AttributeError(
-                f'Node only has a single value: {self.value!r}')
-
-        try:
-            return self.value.get(key)
-        except KeyError:
-            return None
-
 
 def coalesce_params(value):
     result = grammar.Params()
@@ -36,20 +26,19 @@ def coalesce_params(value):
         flattened = coalesce(other_value)
 
         if flattened is None:
-            # result.assign(key, None)
             continue
 
-        if isinstance(flattened, grammar.Params):
-            for k, v in flattened:
-                result.assign(k, v)
+        if (isinstance(flattened, grammar.Params) and
+                (flattened_list := flattened.as_list())):
+            if len(flattened_list) == 1:
+                result.assign(key, flattened_list[0])
+            else:
+                result.assign(key, flattened_list)
         else:
             result.assign(key, flattened)
 
     if not result:
         return None
-
-    if (single_value := result.get_single_value()) is not None:
-        return single_value
 
     return result
 

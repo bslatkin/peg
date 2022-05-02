@@ -62,12 +62,14 @@ print(repr(flat))
 
 
 def handle_sum(context, node):
-    left = context.interpret(node.left)
+    left = context.interpret(node.value.left)
 
-    if node.suffix is None:
+    if node.value.suffix is None:
         return left
 
-    right = context.interpret(node.right)
+    operator = node.value.suffix.operator
+
+    right = context.interpret(node.value.suffix.right)
 
     if operator == '+':
         return left + right
@@ -78,53 +80,44 @@ def handle_sum(context, node):
 
 
 def handle_product(context, node):
-    left = context.interpret(node.left)
+    left = context.interpret(node.value.left)
 
-    if node.suffix is None:
+    if node.value.suffix is None:
         return left
 
     raise NotImplementedError
 
 
 def handle_power(context, node):
-    base = context.interpret(node.base)
+    base = context.interpret(node.value.base)
 
-    if node.suffix is None:
+    if node.value.suffix is None:
         return base
 
-    raise NotImplementedError
+    exponent = context.interpret(node.value.suffix.exponent)
+
+    return base ** exponent
 
 
 def handle_value(context, node):
-    if node.digits is not None:
-        return context.interpret(node.digits)
+    if node.value.digits is not None:
+        digits = []
+        if isinstance(node.value.digits, list):
+            digits.extend(context.interpret(d) for d in node.value.digits)
+        else:
+            digits.append(context.interpret(node.value.digits))
 
-    return context.interpret(node.inner_sum)
+        return int(''.join(digits))
 
-    # if not isinstance(node.value, list):
-    #     return context.interpret(node.value)
+    assert node.value.sub_expr
 
-    # # TODO: This is really ugly that I have to reengineer how the parser
-    # # matched I'm coming back to interpret the results, when I knew full well
-    # # what was happening at parse time. Instead, I should name each piece of
-    # # the rule and then pull that through all the way to the end so it can be
-    # # used here.
-
-    # assert len(node.value) > 0
-
-    # if node.value[0] == '(':
-    #     assert len(node.value) == 3
-    #     assert node.value[0] == '('
-    #     assert node.value[2] == ')'
-    #     return context.interpret(node.value[1])
-
-    # else:
-    #     return int(''.join(context.interpret(v) for v in node.value))
+    return context.interpret(node.value.sub_expr.inner_sum)
 
 
 def handle_number(context, node):
-    assert isinstance(node.value, str)
-    return node.value
+    value = node.value.get_single_value()
+    assert isinstance(value, str)
+    return value
 
 
 def handle_str(context, node):
