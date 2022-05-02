@@ -6,17 +6,19 @@ class Context:
     def __init__(self, handlers):
         self.handlers = handlers
 
-    def interpret(self, node):
-        return interpret(self.handlers, self, node)
+    def interpret(self, value):
+        return interpret(self.handlers, self, value)
 
 
-def interpret(handlers, context, node):
-    if isinstance(node, syntax.SyntaxNode):
-        node_type = node.rule.symbol
+def interpret(handlers, context, value):
+    if isinstance(value, syntax.SyntaxNode):
+        value_type = value.rule.symbol
+        to_handle = value.value
     else:
-        node_type = type(node)
+        value_type = type(value)
+        to_handle = value
 
-    print(f'Interpreting: {node_type=} {node=}')
+    print(f'Interpreting: {value_type=} {to_handle=}')
 
-    handler = handlers[node_type]
-    return handler(context, node)
+    handler = handlers[value_type]
+    return handler(context, to_handle)

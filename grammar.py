@@ -55,37 +55,20 @@ class Params:
         assert key not in self.mappings
         self.mappings[key] = value
 
-    def get(self, key):
-        return self.mappings[key]
-
-    def as_list(self):
-        result = []
-        for key, value in self:
-            if not isinstance(key, int):
-                break
-
-            result.append(value)
-
-        if not result:
-            return None
-
-        return result
-
-    def get_single_value(self):
-        if len(self.mappings) != 1:
-            return None
-
-        return next(iter(self.mappings.values()))
-
     def __repr__(self):
         repr_string = repr_params(self)
         return f'{self.__class__.__name__}({repr_string})'
 
+    def __getitem__(self, index):
+        assert isinstance(index, int)
+        for i, (_, value) in enumerate(self):
+            if i == index:
+                return value
+
+        raise IndexError(index)
+
     def __getattr__(self, key):
-        try:
-            return self.mappings.get(key)
-        except KeyError:
-            return None
+        return self.mappings.get(key)
 
 
 class Expr:
@@ -186,31 +169,6 @@ def substitute_refs(grammar):
     return rules
 
 
-def count_keywords(counts, value):
-    if not isinstance(value, Expr):
-        return
-
-    for key, other_value in value.params:
-        if isinstance(key, int):
-            continue
-
-        try:
-            counts[key] += 1
-        except KeyError:
-            counts[key] = 1
-
-        count_keywords(counts, other_value)
-
-
-def validate_rules(rules):
-    for rule in rules:
-        counts = {}
-        count_keywords(counts, rule.expr)
-        for key, value in counts.items():
-            assert value == 1, key
-
-
 class Language:
     def __init__(self, grammar):
         self.rules = substitute_refs(grammar)
-        validate_rules(self.rules.values())

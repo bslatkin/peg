@@ -47,7 +47,7 @@ for rule in MY_LANGUAGE.rules.values():
 
 import parser
 
-result = parser.parse(MY_LANGUAGE.rules.values(), '(21+35)^3')
+result = parser.parse(MY_LANGUAGE.rules.values(), '(21+35+17+8)^3')
 print(repr(result))
 
 # breakpoint()
@@ -58,70 +58,65 @@ import syntax
 flat = syntax.coalesce(result)
 print(repr(flat))
 
-# breakpoint()
+breakpoint()
 
 
-def handle_sum(context, node):
-    left = context.interpret(node.value.left)
+def handle_sum(context, value):
+    left = context.interpret(value.left)
 
-    if node.value.suffix is None:
+    if not value.suffix:
         return left
 
-    operator = node.value.suffix.operator
+    accumulator = left
 
-    right = context.interpret(node.value.suffix.right)
+    for suffix in value.suffix:
+        operator = suffix.operator[0]
+        right = context.interpret(suffix.right)
 
-    if operator == '+':
-        return left + right
-    elif operator == '-':
-        return left - right
-    else:
-        assert False, 'Bad operator'
+        if operator == '+':
+            accumulator += right
+        elif operator == '-':
+            accumulator -= right
+        else:
+            assert False, 'Bad operator'
+
+    return accumulator
 
 
-def handle_product(context, node):
-    left = context.interpret(node.value.left)
+def handle_product(context, value):
+    left = context.interpret(value.left)
 
-    if node.value.suffix is None:
+    if value.suffix is None:
         return left
 
     raise NotImplementedError
 
 
-def handle_power(context, node):
-    base = context.interpret(node.value.base)
+def handle_power(context, value):
+    base = context.interpret(value.base)
 
-    if node.value.suffix is None:
+    if value.suffix is None:
         return base
 
-    exponent = context.interpret(node.value.suffix.exponent)
+    exponent = context.interpret(value.suffix.exponent)
 
     return base ** exponent
 
 
-def handle_value(context, node):
-    if node.value.digits is not None:
-        digits = []
-        if isinstance(node.value.digits, list):
-            digits.extend(context.interpret(d) for d in node.value.digits)
-        else:
-            digits.append(context.interpret(node.value.digits))
+def handle_value(context, value):
+    if value.digits is not None:
+        return int(''.join(context.interpret(d[0]) for d in value.digits))
 
-        return int(''.join(digits))
+    assert value.sub_expr
 
-    assert node.value.sub_expr
-
-    return context.interpret(node.value.sub_expr.inner_sum)
+    return context.interpret(value.sub_expr.inner_sum)
 
 
-def handle_number(context, node):
-    value = node.value.get_single_value()
-    assert isinstance(value, str)
-    return value
-
-
-def handle_str(context, node):
-    return node
+def handle_number(context, value):
+    digit = value[0]
+    assert isinstance(digit, str)
+    assert len(digit) == 1
+    return digit
 
 
 MY_HANDLERS = {
@@ -130,7 +125,6 @@ MY_HANDLERS = {
     'Power': handle_power,
     'Value': handle_value,
     'Number': handle_number,
-    str: handle_str,
 }
 
 

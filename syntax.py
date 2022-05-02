@@ -28,16 +28,17 @@ def coalesce_params(value):
         if flattened is None:
             continue
 
-        if (isinstance(flattened, grammar.Params) and
-                (flattened_list := flattened.as_list())):
-            if len(flattened_list) == 1:
-                # TODO: Don't do this for any repeated nodes so they
-                # always return a list.
-                result.assign(key, flattened_list[0])
-            else:
-                result.assign(key, flattened_list)
-        else:
-            result.assign(key, flattened)
+        result.assign(key, flattened)
+
+    return result
+
+
+def coalesce_repeated(value):
+    result = []
+
+    for _, other_value in value:
+        flattened = coalesce(other_value)
+        result.append(flattened)
 
     if not result:
         return None
@@ -55,14 +56,18 @@ def coalesce(node):
     if node is None:
         return None
 
-    if (isinstance(node, parser.ParseNode) and
-          isinstance(node.source, grammar.Rule)):
-        return coalesce_rule(node.source, node.value)
-
     if isinstance(node, grammar.Params):
         return coalesce_params(node)
 
     if isinstance(node, str):
         return node
+
+    assert isinstance(node, parser.ParseNode)
+
+    if isinstance(node.source, grammar.Rule):
+        return coalesce_rule(node.source, node.value)
+
+    if isinstance(node.source, grammar.RepeatedExpr):
+        return coalesce_repeated(node.value)
 
     return coalesce(node.value)
