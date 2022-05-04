@@ -95,7 +95,7 @@ def deref_single(rules, value):
     return value
 
 
-def substitute_refs(grammar):
+def resolve_refs(grammar):
     rules = {}
 
     for symbol, value in grammar.items():
@@ -105,9 +105,4 @@ def substitute_refs(grammar):
         rule = get_rule(rules, symbol)
         rule.expr = dereferenced
 
-    return rules
-
-
-class Language:
-    def __init__(self, grammar):
-        self.rules = substitute_refs(grammar)
+    return rules.values()

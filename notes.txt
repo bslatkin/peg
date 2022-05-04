@@ -10,3 +10,4 @@
 - Write some tests
 - Implement some other languages such as regular expressions, basic, logo, s-expressions, brainfuck, forth, markdown, xml, css, sql, prolog, lua, toml, json, yaml
 - Have the output of the program be an LLVM-generated static/shared library that does the parsing extremely quickly that can then be called by another language such as Python
+- ParseNodes should preserve the buffer they used to match the rule or item, this way the full context of the input source could be attached to the node and any coalesced syntax nodes. I want this for repl error messages.

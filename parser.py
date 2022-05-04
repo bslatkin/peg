@@ -169,3 +169,9 @@ def parse(rules, buffer):
             return node
 
     return None
+
+
+def get_parse_error(root_node):
+    breakpoint()
+
+

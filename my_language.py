@@ -1,4 +1,5 @@
-from grammar import *
+import grammar
+from grammar import Ref, Expr, Choice, ZeroOrMore, OneOrMore, Optional, And, Not
 
 
 
@@ -32,9 +33,9 @@ MY_GRAMMAR = {
 }
 
 
-MY_LANGUAGE = Language(MY_GRAMMAR)
+MY_RULES = grammar.resolve_refs(MY_GRAMMAR)
 
-for rule in MY_LANGUAGE.rules.values():
+for rule in MY_RULES:
     print(rule)
 
 # breakpoint()
@@ -42,7 +43,7 @@ for rule in MY_LANGUAGE.rules.values():
 
 import parser
 
-result = parser.parse(MY_LANGUAGE.rules.values(), '(21+35+17+8)^3')
+result = parser.parse(MY_RULES, '(21+35+17+8)^3')
 print(repr(result))
 
 # breakpoint()
@@ -53,7 +54,7 @@ import syntax
 flat = syntax.coalesce(result)
 print(repr(flat))
 
-breakpoint()
+# breakpoint()
 
 
 def handle_sum(context, value):
@@ -129,4 +130,5 @@ context = interpreter.Context(MY_HANDLERS)
 result = context.interpret(flat)
 print(result)
 
-breakpoint()
+
+interpreter.repl(MY_RULES, context)
