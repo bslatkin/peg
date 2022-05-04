@@ -1,4 +1,5 @@
 import grammar
+import parameters
 import parser
 
 
@@ -9,8 +10,8 @@ class SyntaxNode:
         self.value = value
 
     def __repr__(self):
-        if isinstance(self.value, grammar.Params):
-            repr_string = grammar.repr_params(self.value)
+        if isinstance(self.value, parameters.Params):
+            repr_string = parameters.repr_params(self.value)
         else:
             repr_string = repr(self.value)
 
@@ -20,7 +21,7 @@ class SyntaxNode:
 
 
 def coalesce_params(value):
-    result = grammar.Params()
+    result = parameters.Params()
 
     for key, other_value in value:
         flattened = coalesce(other_value)
@@ -56,7 +57,7 @@ def coalesce(node):
     if node is None:
         return None
 
-    if isinstance(node, grammar.Params):
+    if isinstance(node, parameters.Params):
         return coalesce_params(node)
 
     if isinstance(node, str):

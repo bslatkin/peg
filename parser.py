@@ -1,4 +1,5 @@
 import grammar
+import parameters
 
 
 
@@ -28,7 +29,7 @@ def descend_rule(rule, buffer):
 
 
 def match_params(source, params, buffer):
-    found = grammar.Params()
+    found = parameters.Params()
     current = buffer
 
     for key, value in params:
@@ -47,7 +48,7 @@ def descend_expr(expr, buffer):
 
 
 def repeat_match_params(source, params, buffer):
-    found = grammar.Params()
+    found = parameters.Params()
     current = buffer
     index = 0
 
@@ -112,7 +113,7 @@ def descend_not(expr, buffer):
 
 
 def descend_choice(expr, buffer):
-    found = grammar.Params()
+    found = parameters.Params()
     node = None
 
     for key, value in expr.params:

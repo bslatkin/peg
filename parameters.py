@@ -9,7 +9,8 @@ def repr_params(params):
         else:
             prefix = f'{key}='
 
-        if isinstance(value, Rule):
+        if hasattr(value, 'symbol'):
+            # Prevent infinite cycles
             pieces.append(
                 f'{prefix}{value.__class__.__name__}'
                 f'({value.symbol!r}, ...)')
@@ -62,4 +63,3 @@ class Params:
 
     def __getattr__(self, key):
         return self.mappings.get(key)
-
