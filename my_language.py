@@ -41,9 +41,15 @@ for rule in MY_RULES:
 # breakpoint()
 
 
+import reader
+
+
+buffer = reader.get_string_reader('(21+35+17+8)^3')
+
+
 import parser
 
-result = parser.parse(MY_RULES, '(21+35+17+8)^3')
+result = parser.parse(MY_RULES, buffer)
 print(repr(result))
 
 # breakpoint()

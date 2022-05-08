@@ -130,17 +130,11 @@ def descend_choice(expr, buffer):
 
 
 def descend_str(expr, buffer):
-    expr_length = len(expr)
-    if expr_length > len(buffer):
+    data, remaining = buffer.read(len(expr))
+    if expr != data:
         return None
 
-    for i in range(expr_length):
-        if expr[i] != buffer[i]:
-            return None
-
-    consumed = buffer[:expr_length]
-    remaining = buffer[expr_length:]
-    return ParseNode(expr, consumed, remaining)
+    return ParseNode(expr, data, remaining)
 
 
 VISITORS = {

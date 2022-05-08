@@ -1,14 +1,5 @@
 
-
-class Error(Exception):
-    pass
-
-
-class EOF(Error):
-    pass
-
-
-class Buffer:
+class Reader:
     def __init__(self, path, data, cursor, line_index, char_index):
         self.path = path
         self.data = data
@@ -17,8 +8,8 @@ class Buffer:
         self.char_index = char_index
 
     def read(self, length):
-        if next_cursor >= len(self.data):
-            raise EOF
+        if self.cursor >= len(self.data):
+            return '', self
 
         next_cursor = self.cursor + length
         result = self.data[self.cursor:next_cursor]
@@ -37,8 +28,8 @@ class Buffer:
             self.path,
             self.data,
             next_cursor,
-            self.line_index,
-            self.char_index)
+            next_line_index,
+            next_char_index)
 
         return result, next_buffer
 
@@ -46,8 +37,26 @@ class Buffer:
         data_length = len(self.data)
 
         endpoint = self.cursor + 1
+
         while endpoint < data_length:
             if self.data[endpoint] == '\n':
+                endpoint += 1
+                break
+            else:
+                endpoint += 1
+
+        return self.data[self.cursor:endpoint]
+
+    def __len__(self):
+        return len(self.data) - self.cursor
 
 
-        self.data[self.cursor]
+def get_string_reader(data):
+    return Reader('<string reader>', data, 0, 0, 0)
+
+
+def get_path_reader(path):
+    with open(path) as f:
+        data = f.read()
+
+    return Reader(path, data, 0, 0, 0)
