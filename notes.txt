@@ -1,13 +1,18 @@
+Next
+- Add a built-in repl to the interpreter that takes multi-line input until two blank lines and then runs the parser
+- ParseNodes should preserve the buffer they used to match the rule or item, this way the full context of the input source could be attached to the node and any coalesced syntax nodes. I want this for repl error messages.
+
+Later
 - Try out And and Not to see if they work
 - Add a catch-all character class
 - Add an "everything but" character class
 - Add a character class that can match Unicode filters (such as whitespace)
-- Enable whitespace to show up in the calculator grammar
-- Enable floating point numbers for the calculator language
 - Write a short language for the grammar that allows configuration to happen it its own short-hand, non-Python file and then generates an interpreter shell from it
-- Add a built-in repl to the interpreter that takes multi-line input until two blank lines and then runs the parser
 - Add input/output streaming to the interpreter or the ability to take command-line arguments
 - Write some tests
 - Implement some other languages such as regular expressions, basic, logo, s-expressions, brainfuck, forth, markdown, xml, css, sql, prolog, lua, toml, json, yaml
 - Have the output of the program be an LLVM-generated static/shared library that does the parsing extremely quickly that can then be called by another language such as Python
-- ParseNodes should preserve the buffer they used to match the rule or item, this way the full context of the input source could be attached to the node and any coalesced syntax nodes. I want this for repl error messages.
+
+Calculator language
+- Enable whitespace to show up in the calculator grammar
+- Enable floating point numbers for the calculator language
