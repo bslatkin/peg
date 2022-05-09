@@ -1,62 +1,51 @@
 
-class Reader:
-    def __init__(self, path, data, cursor, line_index, char_index):
+class Source:
+    def __init__(self, path, data):
         self.path = path
         self.data = data
-        self.cursor = cursor
-        self.line_index = line_index
-        self.char_index = char_index
+
+
+class Buffer:
+    def __init__(self, source, start, end):
+        self.source = source
+        self.start = start
+        self.end = end
+
+
+class Reader:
+    def __init__(self, source, index):
+        self.source = source
+        self.index = index
 
     def read(self, length):
-        if self.cursor >= len(self.data):
-            return '', self
+        data_length = len(self.source.data)
+        if self.index >= data_length:
+            buffer = Buffer(self.source, data_length, data_length)
+            return buffer, self
 
-        next_cursor = self.cursor + length
-        result = self.data[self.cursor:next_cursor]
+        next_index = self.index + length
+        result = self.source.data[self.index:next_index]
         result_length = len(result)
 
-        next_char_index = self.char_index
-        next_line_index = self.line_index
-        for c in result:
-            if c == '\n':
-                next_line_index += 1
-                next_char_index = 0
-            else:
-                next_char_index += 1
+        end_index = self.index + result_length
+        buffer = Buffer(self.source, index, end_index)
 
-        next_buffer = self.__class__(
-            self.path,
-            self.data,
-            next_cursor,
-            next_line_index,
-            next_char_index)
+        next_reader = self.__class__(self.source, next_index)
 
-        return result, next_buffer
-
-    def current_line(self):
-        data_length = len(self.data)
-
-        endpoint = self.cursor + 1
-
-        while endpoint < data_length:
-            if self.data[endpoint] == '\n':
-                endpoint += 1
-                break
-            else:
-                endpoint += 1
-
-        return self.data[self.cursor:endpoint]
+        return buffer, next_reader
 
     def __len__(self):
-        return len(self.data) - self.cursor
+        return len(self.source.data) - self.index
 
 
 def get_string_reader(data):
-    return Reader('<string reader>', data, 0, 0, 0)
+    source = Source('<string reader>', data)
+    return Reader(source, 0)
 
 
 def get_path_reader(path):
     with open(path) as f:
         data = f.read()
 
-    return Reader(path, data, 0, 0, 0)
+    source = Source(path, data)
+    return Reader(source, 0)

@@ -2,6 +2,17 @@ import grammar
 import parameters
 
 
+class Error(Exception):
+    pass
+
+
+class InputRemainingError(Error):
+    def __init__(self, path, line, line_index, column_index):
+        self.path = path
+        self.line = line
+        self.line_index = line_index
+
+
 
 class ParseNode:
     def __init__(self, source, value, remaining):
@@ -165,7 +176,9 @@ def parse(rules, buffer):
     return None
 
 
-def get_parse_error(root_node):
+def get_parse_error(node):
+    if not node.remaining:
+        return None
     breakpoint()
 
 

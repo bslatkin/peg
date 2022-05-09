@@ -43,8 +43,7 @@ for rule in MY_RULES:
 
 import reader
 
-
-buffer = reader.get_string_reader('(21+35+17+8)^3')
+buffer = reader.get_string_reader('(21+35+17+8)^')
 
 
 import parser
@@ -52,7 +51,10 @@ import parser
 result = parser.parse(MY_RULES, buffer)
 print(repr(result))
 
-# breakpoint()
+error = parser.get_parse_error(result)
+print('Parse error:', error)
+
+breakpoint()
 
 
 import syntax
