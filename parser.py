@@ -2,16 +2,14 @@ import grammar
 import parameters
 
 
+
 class Error(Exception):
     pass
 
 
 class InputRemainingError(Error):
-    def __init__(self, path, line, line_index, column_index):
-        self.path = path
-        self.line = line
-        self.line_index = line_index
-
+    def __init__(self, value):
+        self.value = value
 
 
 class ParseNode:
@@ -141,11 +139,11 @@ def descend_choice(expr, buffer):
 
 
 def descend_str(expr, buffer):
-    data, remaining = buffer.read(len(expr))
-    if expr != data:
+    value, remaining = buffer.read(len(expr))
+    if expr != value.text:
         return None
 
-    return ParseNode(expr, data, remaining)
+    return ParseNode(expr, value, remaining)
 
 
 VISITORS = {
@@ -167,18 +165,20 @@ def descend(item, buffer):
     return visitor(item, buffer)
 
 
+def check_parse_error(remaining):
+    if not remaining:
+        return
+
+    first_extra, _ = remaining.read(1)
+    raise InputRemainingError(first_extra)
+
+
 def parse(rules, buffer):
     for rule in rules:
         node = descend(rule, buffer)
         if node is not None:
+            check_parse_error(node.remaining)
             return node
 
-    return None
-
-
-def get_parse_error(node):
-    if not node.remaining:
-        return None
-    breakpoint()
-
-
+    check_parse_error(buffer)
+    assert False, 'Not reached'

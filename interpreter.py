@@ -62,7 +62,7 @@ def read_input():
 
 
 def print_parse_error(e):
-    pass
+    breakpoint()
 
 
 def print_interpret_error(e):
@@ -70,9 +70,9 @@ def print_interpret_error(e):
 
 
 def repl_one(rules, context, source):
-    parse_tree = parser.parse(rules, source)
-    error = parser.get_parse_error(parse_tree)
-    if error:
+    try:
+        parse_tree = parser.parse(rules, source)
+    except parser.Error:
         print_parse_error(error)
         return
 

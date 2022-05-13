@@ -51,9 +51,6 @@ import parser
 result = parser.parse(MY_RULES, buffer)
 print(repr(result))
 
-error = parser.get_parse_error(result)
-print('Parse error:', error)
-
 breakpoint()
 
 
