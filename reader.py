@@ -13,32 +13,48 @@ class Value:
         self.end = end
 
     def line_start_index(self):
-        for i in range(self.start - 1, -1, -1):
-            if self.source.data[i] == '\n':
-                break
+        if not self.source.data:
+            return 0
 
-        return i + 1
+        i = self.start
+
+        while i >= 0:
+            if self.source.data[i] == '\n':
+                i += 1
+                break
+            else:
+                i -= 1
+
+        return i
 
     def line_end_index(self):
-        for i in range(self.end, len(self.source.data)):
-            if self.source.data[i] == '\n':
-                break
+        if not self.source.data:
+            return 0
 
-        return i - 1
+        i = self.end
+
+        while i < len(self.source.data):
+            if self.source.data[i] == '\n':
+                i -= 1
+                break
+            else:
+                i += 1
+
+        return i
 
     def line_start_number(self):
         before = self.source.data[:self.start]
-        return before.count('\n')
+        return before.count('\n') + 1
 
     def text_lines(self):
-        line_start_index = self.line_start_index()
-        line_end_index = self.line_end_index()
-        return self.source.data[line_start_index:line_end_index + 1]
+        start = self.line_start_index()
+        end = self.line_end_index() + 1
+        return self.source.data[start:end]
 
     def column_range(self):
         line_start_index = self.line_start_index()
-        start_number = self.start - line_start_index
-        end_number = self.end - line_start_index
+        start_number = self.start - line_start_index + 1
+        end_number = self.end - line_start_index + 1
         return start_number, end_number
 
 
