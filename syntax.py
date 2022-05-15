@@ -1,6 +1,7 @@
 import grammar
 import parameters
 import parser
+import reader
 
 
 
@@ -60,7 +61,7 @@ def coalesce(node):
     if isinstance(node, parameters.Params):
         return coalesce_params(node)
 
-    if isinstance(node, str):
+    if isinstance(node, reader.Value):
         return node
 
     assert isinstance(node, parser.ParseNode)

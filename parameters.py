@@ -9,7 +9,10 @@ def repr_params(params):
         else:
             prefix = f'{key}='
 
-        if hasattr(value, 'symbol'):
+        if (not isinstance(value, Params) and
+                hasattr(value, 'symbol')):
+            if value.symbol is None:
+                breakpoint()
             # Prevent infinite cycles
             pieces.append(
                 f'{prefix}{value.__class__.__name__}'

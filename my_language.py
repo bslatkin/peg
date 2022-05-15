@@ -43,7 +43,7 @@ for rule in MY_RULES:
 
 import reader
 
-buffer = reader.get_string_reader('(21+35+17+8)^')
+buffer = reader.get_string_reader('5')
 
 
 import parser
@@ -51,9 +51,10 @@ import parser
 result = parser.parse(MY_RULES, buffer)
 print(repr(result))
 
-breakpoint()
+# breakpoint()
 
 
+import reader
 import syntax
 
 flat = syntax.coalesce(result)
@@ -74,9 +75,9 @@ def handle_sum(context, value):
         operator = suffix.operator[0]
         right = context.interpret(suffix.right)
 
-        if operator == '+':
+        if operator.text == '+':
             accumulator += right
-        elif operator == '-':
+        elif operator.text == '-':
             accumulator -= right
         else:
             assert False, 'Bad operator'
@@ -115,9 +116,9 @@ def handle_value(context, value):
 
 def handle_number(context, value):
     digit = value[0]
-    assert isinstance(digit, str)
-    assert len(digit) == 1
-    return digit
+    assert isinstance(digit, reader.Value)
+    assert len(digit.text) == 1
+    return digit.text
 
 
 MY_HANDLERS = {

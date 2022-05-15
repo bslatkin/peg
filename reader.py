@@ -62,6 +62,9 @@ class Value:
         delta = self.end - self.start
         return self.column_start_index() + delta
 
+    def __repr__(self):
+        return f'{__name__}.{self.__class__.__name__}({self.text!r})'
+
 
 class Reader:
     def __init__(self, source, index):
