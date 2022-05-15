@@ -18,7 +18,7 @@ class Value:
 
         i = self.start
 
-        while i >= 0:
+        while i > 0:
             if self.source.data[i] == '\n':
                 i += 1
                 break
@@ -35,7 +35,6 @@ class Value:
 
         while i < len(self.source.data):
             if self.source.data[i] == '\n':
-                i -= 1
                 break
             else:
                 i += 1
@@ -51,11 +50,13 @@ class Value:
         end = self.line_end_index() + 1
         return self.source.data[start:end]
 
-    def column_range(self):
+    def column_start_index(self):
         line_start_index = self.line_start_index()
-        start_number = self.start - line_start_index + 1
-        end_number = self.end - line_start_index + 1
-        return start_number, end_number
+        return self.start - line_start_index
+
+    def column_end_index(self):
+        delta = self.end - self.start
+        return self.column_start_index() + delta
 
 
 class Reader:
