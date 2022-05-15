@@ -39,6 +39,10 @@ class Value:
             else:
                 i += 1
 
+        # No trailing newline case
+        if self.source.data and i == len(self.source.data):
+            i -= 1
+
         return i
 
     def line_start_number(self):

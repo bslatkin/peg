@@ -39,11 +39,11 @@ class ValueTest(unittest.TestCase):
         self.assertEqual(8, value.column_end_index())
 
     def test_no_blank_line_end(self):
-        source = reader.Source(self.path, 'hello')
-        value = reader.Value(source, 'hello', 0, 4)
-        self.assertEqual(0, value.line_start_index())
-        self.assertEqual(5, value.line_end_index())
-        self.assertEqual(1, value.line_start_number())
+        source = reader.Source(self.path, 'okay\nhello')
+        value = reader.Value(source, 'hello', 5, 9)
+        self.assertEqual(5, value.line_start_index())
+        self.assertEqual(9, value.line_end_index())
+        self.assertEqual(2, value.line_start_number())
         self.assertEqual('hello', value.text_lines())
         self.assertEqual(0, value.column_start_index())
         self.assertEqual(4, value.column_end_index())
@@ -79,13 +79,34 @@ class ValueTest(unittest.TestCase):
         self.assertEqual(5, value.column_end_index())
 
     def test_full_column_span(self):
-        pass
+        source = reader.Source(self.path, 'yes no\n')
+        value = reader.Value(source, 'yes no', 0, 6)
+        self.assertEqual(0, value.line_start_index())
+        self.assertEqual(6, value.line_end_index())
+        self.assertEqual(1, value.line_start_number())
+        self.assertEqual('yes no\n', value.text_lines())
+        self.assertEqual(0, value.column_start_index())
+        self.assertEqual(6, value.column_end_index())
 
     def test_value_covers_all_lines(self):
-        pass
+        source = reader.Source(self.path, 'yes\nno\nmaybe\n')
+        value = reader.Value(source, 'yes\nno\nmaybe', 0, 11)
+        self.assertEqual(0, value.line_start_index())
+        self.assertEqual(12, value.line_end_index())
+        self.assertEqual(1, value.line_start_number())
+        self.assertEqual('yes\nno\nmaybe\n', value.text_lines())
+        self.assertEqual(0, value.column_start_index())
+        self.assertEqual(11, value.column_end_index())
 
     def test_no_newlines(self):
-        pass
+        source = reader.Source(self.path, 'banana')
+        value = reader.Value(source, 'banana', 0, 5)
+        self.assertEqual(0, value.line_start_index())
+        self.assertEqual(5, value.line_end_index())
+        self.assertEqual(1, value.line_start_number())
+        self.assertEqual('banana', value.text_lines())
+        self.assertEqual(0, value.column_start_index())
+        self.assertEqual(5, value.column_end_index())
 
 
 
