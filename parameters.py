@@ -12,7 +12,7 @@ def repr_params(params):
         if (not isinstance(value, Params) and
                 hasattr(value, 'symbol')):
             if value.symbol is None:
-                breakpoint()
+                breakpoint()  # XXX
             # Prevent infinite cycles
             pieces.append(
                 f'{prefix}{value.__class__.__name__}'

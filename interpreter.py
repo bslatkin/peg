@@ -86,6 +86,8 @@ def print_parse_error(e):
     print(lines)
     print(underline)
 
+    breakpoint()
+
 
 def print_interpret_error(e):
     breakpoint()

@@ -8,7 +8,8 @@ class Error(Exception):
 
 
 class InputRemainingError(Error):
-    def __init__(self, value):
+    def __init__(self, node, value):
+        self.node = node
         self.value = value
 
 
@@ -165,20 +166,20 @@ def descend(item, buffer):
     return visitor(item, buffer)
 
 
-def check_parse_error(remaining):
+def check_parse_error(node, remaining):
     if not remaining:
         return
 
     first_extra, _ = remaining.read(1)
-    raise InputRemainingError(first_extra)
+    raise InputRemainingError(node, first_extra)
 
 
 def parse(rules, buffer):
     for rule in rules:
         node = descend(rule, buffer)
         if node is not None:
-            check_parse_error(node.remaining)
+            check_parse_error(node, node.remaining)
             return node
 
-    check_parse_error(buffer)
+    check_parse_error(None, buffer)
     assert False, 'Not reached'
