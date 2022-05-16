@@ -86,6 +86,10 @@ class Reader:
 
         return value, next_reader
 
+    def __repr__(self):
+        remaining = self.source.data[self.index:]
+        return f'{self.__class__.__name__}({remaining!r})'
+
     def __len__(self):
         return len(self.source.data) - self.index
 
