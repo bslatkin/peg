@@ -79,20 +79,24 @@ def descend_rule(rule, buffer):
 def match_params(source, params, buffer):
     found = parameters.Params()
     current = buffer
-    match_success = False
+    match_success = True
 
     for key, value in params:
         node = descend(value, current)
         if node.matched:
             found.assign(key, node)
-            match_success = True
+        else:
+            match_success = False
+            found.assign(key, None)
+            break
 
         current = node.remaining
+
 
     if match_success:
         return ParseNode(source, found, current)
     else:
-        return IncompleteNode(source, found, current )
+        return IncompleteNode(source, found, current)
 
 
 def descend_expr(expr, buffer):
@@ -110,8 +114,9 @@ def repeat_match_params(source, params, buffer):
 
         if node.matched:
             any_matches = True
-            found.assign(index, node)
+            found.assign(index, node)  # XXX this is key
         else:
+            found.assign(index, node)  # Deep in the ivory tower!
             break
 
         current = node.remaining
@@ -180,6 +185,8 @@ def descend_choice(expr, buffer):
             if node.matched:
                 found.assign(key, node)
                 continue
+
+        found.assign(key, None)
 
     if node.matched:
         return ParseNode(expr, found, node.remaining)
