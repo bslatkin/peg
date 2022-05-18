@@ -1,3 +1,5 @@
+import functools
+
 import grammar
 import parameters
 import reader
@@ -7,10 +9,9 @@ class Error(Exception):
     pass
 
 
-class InputRemainingError(Error):
-    def __init__(self, node, value):
-        self.node = node
-        self.value = value
+class NothingMatchesError(Error):
+    def __init__(self, remaining):
+        self.remaining = remaining
 
 
 class IncompleteParseError(Error):
@@ -22,6 +23,10 @@ class ParseNode:
     matched = True
 
     def __init__(self, source, value, remaining):
+        if remaining is None:
+            breakpoint()
+        assert source is not None
+        assert remaining is not None
         self.source = source
         self.value = value
         self.remaining = remaining
@@ -32,13 +37,22 @@ class ParseNode:
             name = f'{name}{self.source.symbol!r}, '
 
         return (
-            f'{name}'
+            f'{self.__class__.__name__}:{name}'
             f'value={self.value!r}, '
-            f'len(remaining)={len(self.remaining)})')
+            f'remaining={self.remaining!r})')
+            # f'len(remaining)={len(self.remaining)})')
 
 
-class IncompleteNode(ParseNode):
-    matched = False
+class Match(ParseNode):
+    pass
+
+
+class Partial(ParseNode):
+    pass
+
+
+class Miss(ParseNode):
+    pass
 
 
 def get_reader_values(node):
@@ -68,138 +82,239 @@ def get_combined_reader_value(node):
 
 
 
+DEPTH = 0
+
+def trace(func):
+    @functools.wraps(func)
+    def wrapped(*args):
+        global DEPTH
+        prefix = DEPTH * '    '
+        args_repr = ', '.join(repr(a) for a in args)
+        print(f'{prefix} Running: {func.__name__}({args_repr})')
+        DEPTH += 1
+        result = func(*args)
+        DEPTH -= 1
+        print(f'{prefix} Result: {result!r}')
+        return result
+    return wrapped
+
+
+@trace
 def descend_rule(rule, buffer):
     node = descend(rule.expr, buffer)
-    if not node.matched:
-        return IncompleteNode(rule, node, node.remaining)
+    if isinstance(node, Match):
+        return Match(rule, node, node.remaining)
+    elif isinstance(node, Partial):
+        return Partial(rule, node, node.remaining)
+    else:
+        return Miss(rule, None, buffer)
 
-    return ParseNode(rule, node, node.remaining)
 
-
+@trace
 def match_params(source, params, buffer):
     found = parameters.Params()
     current = buffer
-    match_success = True
+
+    consider_keys = 0
+    match_keys = 0
+    partial_keys = 0
+    miss_keys = 0
 
     for key, value in params:
+        consider_keys += 1
+
         node = descend(value, current)
-        if node.matched:
+        if isinstance(node, Match):
+            match_keys += 1
             found.assign(key, node)
+            current = node.remaining
+        elif isinstance(node, Partial):
+            partial_keys += 1
+            found.assign(key, node)
+            current = node.remaining
+            break
         else:
-            match_success = False
+            miss_keys += 1
             found.assign(key, None)
             break
 
-        current = node.remaining
-
-
-    if match_success:
-        return ParseNode(source, found, current)
+    if match_keys == consider_keys:
+        return Match(source, found, current)
+    elif partial_keys or match_keys:
+        return Partial(source, found, current)
+    elif miss_keys:
+        return Miss(source, None, current)
     else:
-        return IncompleteNode(source, found, current)
+        assert False, 'Not reachable'
 
 
+@trace
 def descend_expr(expr, buffer):
     return match_params(expr, expr.params, buffer)
 
 
+@trace
 def repeat_match_params(source, params, buffer):
-    found = parameters.Params()
     current = buffer
-    index = 0
-    any_matches = False
+    result = []
 
     while current:
         node = match_params(source, params, current)
 
-        if node.matched:
-            any_matches = True
-            found.assign(index, node)  # XXX this is key
+        if isinstance(node, Match):
+            result.append(node)
+            current = node.remaining
+        elif isinstance(node, Partial):
+            result.append(node)
+            break
         else:
-            found.assign(index, node)  # Deep in the ivory tower!
             break
 
-        current = node.remaining
-        index += 1
-
-    if any_matches:
-        return ParseNode(source, found, current)
-    else:
-        return IncompleteNode(source, found, current)
+    return result
 
 
+@trace
 def descend_one_or_more(expr, buffer):
     pairs = list(expr.params)
     assert len(pairs) == 1
     index, sub_expr = pairs[0]
     assert index == 0
 
-    node = repeat_match_params(sub_expr, sub_expr.params, buffer)
-    if node.matched:
-        return ParseNode(expr, node, node.remaining)
+    found = parameters.Params()
+    result = repeat_match_params(sub_expr, sub_expr.params, buffer)
+
+    match_count = 0
+    partial_count = 0
+    current = None
+
+    for i, node in enumerate(result):
+        if isinstance(node, Match):
+            found.assign(i, node)
+            match_count += 1
+            current = node.remaining
+        elif isinstance(node, Partial):
+            found.assign(i, node)
+            partial_count += 1
+            current = node.remaining
+            break
+        else:
+            assert False, 'Should not happen'
+
+    if match_count >= 1:
+        return Match(expr, found, current)
+    elif partial_count >= 1:
+        return Partial(expr, found, current)
     else:
-        return IncompleteNode(expr, node, node.remaining)
+        return Miss(expr, None, buffer)
 
 
+@trace
 def descend_zero_or_more(expr, buffer):
     pairs = list(expr.params)
     assert len(pairs) == 1
     index, sub_expr = pairs[0]
     assert index == 0
 
-    node = repeat_match_params(sub_expr, sub_expr.params, buffer)
-    return ParseNode(expr, node, node.remaining)
+    found = parameters.Params()
+    result = repeat_match_params(sub_expr, sub_expr.params, buffer)
+    current = buffer
+
+    for i, node in enumerate(result):
+        if isinstance(node, Match):
+            found.assign(i, node)
+            current = node.remaining
+        elif isinstance(node, Partial):
+            if i == 0:
+                found.assign(i, node)
+                return Partial(expr, found, node.remaining)
+            break
+        else:
+            break
+
+    return Match(expr, found, current)
 
 
+
+@trace
 def descend_optional(expr, buffer):
     node = match_params(expr, expr.params, buffer)
-    if node.matched:
-        return ParseNode(expr, node, node.remaining)
+    if isinstance(node, Match):
+        return Match(expr, node, node.remaining)
+    elif isinstance(node, Partial):
+        return Partial(expr, node, node.remaining)
     else:
-        return ParseNode(expr, node, buffer)
+        return Match(expr, None, buffer)
 
 
+@trace
 def descend_and(expr, buffer):
     node = match_params(expr, expr.params, buffer)
-    if node.matched:
-        return ParseNode(expr, node, buffer)
+    if isinstance(node, Match):
+        return Match(expr, node, buffer)
+    elif isinstance(node, Partial):
+        return Partial(expr, node, buffer)
     else:
-        return IncompleteNode(expr, node, buffer)
+        return Miss(expr, node, buffer)
 
 
+@trace
 def descend_not(expr, buffer):
     node = match_params(expr, expr.params, buffer)
-    if node.matched:
-        return IncompleteNode(expr, node, buffer)
+    if isinstance(node, Match):
+        return Miss(expr, node, buffer)
     else:
-        return ParseNode(expr, node, buffer)
+        return Match(expr, node, buffer)
 
 
+def longest_reader(nodes):
+    longest_index = -1
+    longest_node = None
+
+    for node in nodes:
+        if node.remaining.index > longest_index:
+            longest_index = node.remaining.index
+            longest_node = node
+
+    return longest_node
+
+
+@trace
 def descend_choice(expr, buffer):
     found = parameters.Params()
-    node = IncompleteNode(expr, found, buffer)
+    match_node = None
+    partial_nodes = []
 
     for key, value in expr.params:
-        if not node.matched:
+        if match_node is None:
             node = descend(value, buffer)
-            if node.matched:
+            if isinstance(node, Match):
                 found.assign(key, node)
+                match_node = node
+                continue
+            elif isinstance(node, Partial):
+                found.assign(key, node)
+                partial_nodes.append(node)
                 continue
 
         found.assign(key, None)
 
-    if node.matched:
-        return ParseNode(expr, found, node.remaining)
+    if match_node:
+        return Match(expr, found, match_node.remaining)
+    elif partial_nodes:
+        breakpoint()
+        longest_partial = longest_reader(partial_nodes)  # TODO: Test this
+        return Partial(expr, found, longest_partial.remaining)
     else:
-        return IncompleteNode(expr, node, node.remaining)
+        return Miss(expr, None, buffer)
 
 
+@trace
 def descend_str(expr, buffer):
     value, remaining = buffer.read(len(expr))
     if expr == value.text:
-        return ParseNode(expr, value, remaining)
+        return Match(expr, value, remaining)
     else:
-        return IncompleteNode(expr, value, remaining)
+        return Miss(expr, None, buffer)
 
 
 VISITORS = {
@@ -215,34 +330,22 @@ VISITORS = {
 }
 
 
+@trace
 def descend(item, buffer):
     if not buffer:
-        return IncompleteNode(item, None, buffer)
+        return Miss(item, None, buffer)
 
     print(f'Descending: {item=}, {type(item)=} with {buffer=}')
     visitor = VISITORS[type(item)]
     return visitor(item, buffer)
 
 
-def check_extra_error(node, remaining):
-    if not remaining:
-        return
-
-    first_extra, _ = remaining.read(1)
-    raise InputRemainingError(node, first_extra)
-
-
-def pick_failure(full_size, failures):
-    longest = full_size
-    longest_node = None
-
-    for node in failures:
-        if len(node.remaining) < longest:
-            longest = len(node.remaining)
-            longest_node = node
-
-    assert longest_node
-    raise IncompleteParseError(longest_node)
+def pick_failure(failures):
+    longest_node = longest_reader(failures)
+    if longest_node.remaining.index > 0:
+        raise IncompleteParseError(longest_node)
+    else:
+        raise NothingMatchesError(longest_node.remaining)
 
 
 def parse(rules, buffer):
@@ -250,12 +353,9 @@ def parse(rules, buffer):
 
     for rule in rules:
         node = descend(rule, buffer)
-        if node.matched:
-            check_extra_error(node, node.remaining)
+        if isinstance(node, Match) and not node.remaining:
             return node
         else:
             failures.append(node)
 
-    pick_failure(len(buffer), failures)
-
-    raise InputRemainingError(None, buffer)  # TODO test this
+    pick_failure(failures)

@@ -125,103 +125,102 @@ class ParseSuccessTest(TestBase):
 class ParseFailureTest(TestBase):
 
     def test_all_leftover(self):
-        with self.assertRaises(parser.InputRemainingError) as context:
+        with self.assertRaises(parser.NothingMatchesError) as context:
             self.run_test('+1+2')
 
         exc = context.exception
 
-        self.assertIsNone(exc.node)
-        self.assertEqual('+', exc.value.text)
-        self.assertEqual('+1+2', exc.value.text_lines())
+        value, next_reader = exc.remaining.read()
+        self.assertEqual('+1+2', value.text)
+        self.assertEqual('+1+2', value.text_lines())
 
     def test_trailing_leftover(self):
-        with self.assertRaises(parser.InputRemainingError) as context:
+        with self.assertRaises(parser.IncompleteParseError) as context:
             self.run_test('(1+2)-')
 
         exc = context.exception
 
         found = flatten(exc.node)
         expected = \
-            [('digits', None),
-             ('sub_expr',
-              [('left_paren', '('),
-               ('inner_sum',
-                [('left',
-                  [('digits',
-                    [(0,
+            [('left',
+              [('digits', None),
+               ('sub_expr',
+                [('left_paren', '('),
+                 ('inner_sum',
+                  [('left',
+                    [('digits',
                       [(0,
-                        [(0, None),
-                         (1, '1'),
-                         (2, None),
-                         (3, None),
-                         (4, None),
-                         (5, None),
-                         (6, None),
-                         (7, None),
-                         (8, None),
-                         (9, None)])])]),
-                   ('sub_expr', None)]),
-                 ('suffix',
-                  [(0,
-                    [('operator', [(0, '+'), (1, None)]),
-                     ('right',
-                      [('left',
-                        [('digits',
-                          [(0,
+                        [(0,
+                          [(0, None),
+                           (1, '1'),
+                           (2, None),
+                           (3, None),
+                           (4, None),
+                           (5, None),
+                           (6, None),
+                           (7, None),
+                           (8, None),
+                           (9, None)])])]),
+                     ('sub_expr', None)]),
+                   ('suffix',
+                    [(0,
+                      [('operator', [(0, '+'), (1, None)]),
+                       ('right',
+                        [('left',
+                          [('digits',
                             [(0,
-                              [(0, None),
-                               (1, None),
-                               (2, '2'),
-                               (3, None),
-                               (4, None),
-                               (5, None),
-                               (6, None),
-                               (7, None),
-                               (8, None),
-                               (9, None)])])]),
-                         ('sub_expr', None)]),
-                       ('suffix', [])])])])]),
-               ('right_paren', ')')])]
+                              [(0,
+                                [(0, None),
+                                 (1, None),
+                                 (2, '2'),
+                                 (3, None),
+                                 (4, None),
+                                 (5, None),
+                                 (6, None),
+                                 (7, None),
+                                 (8, None),
+                                 (9, None)])])]),
+                           ('sub_expr', None)]),
+                         ('suffix', [])])])])]),
+                 ('right_paren', ')')])]),
+             ('suffix',
+                [(0, [('operator', [(0, None), (1, '-')]), ('right', None)])])]
         self.assertEqual(expected, found)
 
-        self.assertEqual('-', exc.value.text)
-        self.assertEqual('(1+2)-', exc.value.text_lines())
+        reader_values = parser.get_combined_reader_value(exc.node)
+        self.assertEqual('(1+2)-', reader_values.text)
+        self.assertEqual('(1+2)-', reader_values.text_lines())
 
     def test_middle_leftover(self):
         with self.assertRaises(parser.IncompleteParseError) as context:
-            x = self.run_test('(1+')
-            breakpoint()
+            x = self.run_test('1+')
 
         exc = context.exception
 
         found = flatten(exc.node)
         expected = \
-            [('left_paren', '('),
-             ('inner_sum',
-              [('left',
-                [('digits',
+            [('left',
+              [('digits',
+                [(0,
                   [(0,
-                    [(0,
-                      [(0, None),
-                       (1, '1'),
-                       (2, None),
-                       (3, None),
-                       (4, None),
-                       (5, None),
-                       (6, None),
-                       (7, None),
-                       (8, None),
-                       (9, None)])])]),
-                 ('sub_expr', None)]),
-               ('suffix', [])]),
-             ('right_paren', None)]
+                    [(0, None),
+                     (1, '1'),
+                     (2, None),
+                     (3, None),
+                     (4, None),
+                     (5, None),
+                     (6, None),
+                     (7, None),
+                     (8, None),
+                     (9, None)])])]),
+               ('sub_expr', None)]),
+             ('suffix', [(0,
+                [('operator', [(0, '+'), (1, None)]), ('right', None)])])]
         self.assertEqual(expected, found)
 
         reader_values = parser.get_combined_reader_value(exc.node)
-        breakpoint()
-
-        self.assertEqual('', exc.value.text)
-        self.assertEqual('(1+', exc.value.text_lines())
+        self.assertEqual('1+', reader_values.text)
+        self.assertEqual('1+', reader_values.text_lines())
 
 
 if __name__ == '__main__':

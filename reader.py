@@ -71,8 +71,12 @@ class Reader:
         self.source = source
         self.index = index
 
-    def read(self, length):
+    def read(self, length=None):
         data_length = len(self.source.data)
+
+        if length is None:
+            length = data_length
+
         if self.index >= data_length:
             value = Value(self.source, '', data_length, data_length)
             return value, self
