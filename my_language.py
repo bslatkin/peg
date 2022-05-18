@@ -63,6 +63,53 @@ print(repr(flat))
 # breakpoint()
 
 
+def validate_sum(left, suffix):
+
+    pass
+
+
+def validate_product():
+    pass
+
+
+def validate_power():
+    pass
+
+
+def validate_value(*, digits, sub_expr):
+    assert digits ^ sub_expr
+
+    if sub_expr is not None:
+        assert sub_expr.left_paren == '('
+
+        if sub_expr.inner_sum is None:
+            raise syntax.ValidationError(
+                'Value inside subexpression is missing')
+
+        if sub_expr.right_parent is None:
+            raise syntax.ValidationError(
+                'Closing parenthesis for subexpression is missing')
+
+        return sub_expr.inner_sum
+    else:
+        return digits
+
+
+def validate_number(*values):
+    simplify this
+
+
+ERROR_HANDLERS = {
+    'Sum': validate_sum,
+    'Product': validate_product,
+    'Power': validate_power,
+    'Value': validate_value,
+    'Number': validate_number,
+}
+
+
+
+
 def handle_sum(context, value):
     left = context.interpret(value.left)
 
@@ -121,7 +168,7 @@ def handle_number(context, value):
     return digit.text
 
 
-MY_HANDLERS = {
+INTEPRET_HANDLERS = {
     'Sum': handle_sum,
     'Product': handle_product,
     'Power': handle_power,
@@ -132,7 +179,7 @@ MY_HANDLERS = {
 
 import interpreter
 
-context = interpreter.Context(MY_HANDLERS)
+context = interpreter.Context(INTEPRET_HANDLERS)
 result = context.interpret(flat)
 print(result)
 

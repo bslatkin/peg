@@ -73,3 +73,25 @@ def coalesce(node):
         return coalesce_repeated(node.value)
 
     return coalesce(node.value)
+
+
+def describe_error(handlers, syntax_node):
+    handle_args = []
+    handle_kwargs {}
+
+    for key, value in syntax_node.value:
+        if isinstance(value, syntax.SyntaxNode):
+            checked_value = describe_error(handlers, value)
+            if isinstance(key, int):
+                handle_args.append(checked_value)
+            else:
+                handle_kwargs[key] = checked_value
+        else:
+            if isinstance(key, int):
+                handle_args.append(value)
+            else:
+                handle_kwargs[key] = value
+
+    node_type = type(value)
+    handler = handlers[value_type]
+    return handler(*handle_args, **handle_kwargs)

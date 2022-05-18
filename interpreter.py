@@ -67,6 +67,15 @@ def read_input():
 
 
 def print_parse_error(e):
+    if isinstanc(e, parser.NothingMatchesError):
+        pass
+    elif isinstance(e, parser.IncompleteParseError):
+        pass
+    else:
+        assert False, 'Not reachable'
+
+
+    breakpoint()
     value = e.value
 
     path = value.source.path

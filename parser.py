@@ -23,8 +23,6 @@ class ParseNode:
     matched = True
 
     def __init__(self, source, value, remaining):
-        if remaining is None:
-            breakpoint()
         assert source is not None
         assert remaining is not None
         self.source = source
@@ -357,3 +355,4 @@ def parse(rules, buffer):
             failures.append(node)
 
     pick_failure(failures)
+
