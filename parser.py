@@ -40,7 +40,6 @@ class ParseNode:
             f'{self.__class__.__name__}:{name}'
             f'value={self.value!r}, '
             f'remaining={self.remaining!r})')
-            # f'len(remaining)={len(self.remaining)})')
 
 
 class Match(ParseNode):
@@ -55,6 +54,7 @@ class Miss(ParseNode):
     pass
 
 
+# TODO: Move this to reader.py
 def get_reader_values(node):
     if node is None:
         return []
@@ -81,7 +81,7 @@ def get_combined_reader_value(node):
     return reader.Value(source, text, min_start, max_end)
 
 
-
+# TODO: Make this a better helper class behind a flag
 DEPTH = 0
 
 def trace(func):
@@ -234,7 +234,6 @@ def descend_zero_or_more(expr, buffer):
     return Match(expr, found, current)
 
 
-
 @trace
 def descend_optional(expr, buffer):
     node = match_params(expr, expr.params, buffer)
@@ -301,8 +300,7 @@ def descend_choice(expr, buffer):
     if match_node:
         return Match(expr, found, match_node.remaining)
     elif partial_nodes:
-        breakpoint()
-        longest_partial = longest_reader(partial_nodes)  # TODO: Test this
+        longest_partial = longest_reader(partial_nodes)
         return Partial(expr, found, longest_partial.remaining)
     else:
         return Miss(expr, None, buffer)
