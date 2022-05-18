@@ -193,7 +193,7 @@ class ParseFailureTest(TestBase):
 
     def test_middle_leftover(self):
         with self.assertRaises(parser.IncompleteParseError) as context:
-            x = self.run_test('1+')
+            x = self.run_test('1+nope')
 
         exc = context.exception
 
@@ -220,7 +220,7 @@ class ParseFailureTest(TestBase):
 
         reader_values = parser.get_combined_reader_value(exc.node)
         self.assertEqual('1+', reader_values.text)
-        self.assertEqual('1+', reader_values.text_lines())
+        self.assertEqual('1+nope', reader_values.text_lines())
 
 
 if __name__ == '__main__':
