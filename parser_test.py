@@ -134,7 +134,7 @@ class ParseFailureTest(TestBase):
         self.assertEqual('+', exc.value.text)
         self.assertEqual('+1+2', exc.value.text_lines())
 
-    def test_some_leftover(self):
+    def test_trailing_leftover(self):
         with self.assertRaises(parser.InputRemainingError) as context:
             self.run_test('(1+2)-')
 
@@ -186,6 +186,42 @@ class ParseFailureTest(TestBase):
 
         self.assertEqual('-', exc.value.text)
         self.assertEqual('(1+2)-', exc.value.text_lines())
+
+    def test_middle_leftover(self):
+        with self.assertRaises(parser.IncompleteParseError) as context:
+            x = self.run_test('(1+')
+            breakpoint()
+
+        exc = context.exception
+
+        found = flatten(exc.node)
+        expected = \
+            [('left_paren', '('),
+             ('inner_sum',
+              [('left',
+                [('digits',
+                  [(0,
+                    [(0,
+                      [(0, None),
+                       (1, '1'),
+                       (2, None),
+                       (3, None),
+                       (4, None),
+                       (5, None),
+                       (6, None),
+                       (7, None),
+                       (8, None),
+                       (9, None)])])]),
+                 ('sub_expr', None)]),
+               ('suffix', [])]),
+             ('right_paren', None)]
+        self.assertEqual(expected, found)
+
+        reader_values = parser.get_combined_reader_value(exc.node)
+        breakpoint()
+
+        self.assertEqual('', exc.value.text)
+        self.assertEqual('(1+', exc.value.text_lines())
 
 
 if __name__ == '__main__':
