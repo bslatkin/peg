@@ -5,6 +5,18 @@ import reader
 
 
 
+class Error(Exception):
+    pass
+
+
+class ValidationError(Error):
+    def __init__(self, message, where):
+        super().__init__(message, where)
+        self.message = message
+        self.where = where
+        self.syntax_node = None
+
+
 class SyntaxNode:
     def __init__(self, rule, value):
         self.rule = rule
@@ -75,23 +87,21 @@ def coalesce(node):
     return coalesce(node.value)
 
 
-def describe_error(handlers, syntax_node):
-    handle_args = []
-    handle_kwargs {}
-
-    for key, value in syntax_node.value:
-        if isinstance(value, syntax.SyntaxNode):
-            checked_value = describe_error(handlers, value)
-            if isinstance(key, int):
-                handle_args.append(checked_value)
-            else:
-                handle_kwargs[key] = checked_value
-        else:
-            if isinstance(key, int):
-                handle_args.append(value)
-            else:
-                handle_kwargs[key] = value
-
-    node_type = type(value)
-    handler = handlers[value_type]
-    return handler(*handle_args, **handle_kwargs)
+# TODO: This is really an "explain" feature.
+def validate(handlers, node):
+    if isinstance(node, SyntaxNode):
+        validate(handlers, node.value)
+        handler = handlers[node.rule.symbol]
+        try:
+            handler(node.value)
+        except ValidationError as e:
+            e.syntax_node = node
+            raise
+    elif isinstance(node, parameters.Params):
+        for key, value in node:
+            validate(handlers, value)
+    elif isinstance(node, list):
+        for value in node:
+            validate(handlers, value)
+    else:
+        pass  # TODO What should this do?

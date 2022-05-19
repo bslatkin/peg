@@ -67,7 +67,7 @@ def read_input():
 
 
 def print_parse_error(e):
-    if isinstanc(e, parser.NothingMatchesError):
+    if isinstance(e, parser.NothingMatchesError):
         pass
     elif isinstance(e, parser.IncompleteParseError):
         pass

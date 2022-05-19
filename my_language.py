@@ -35,68 +35,72 @@ MY_GRAMMAR = {
 
 MY_RULES = grammar.resolve_refs(MY_GRAMMAR)
 
-for rule in MY_RULES:
-    print(rule)
-
-# breakpoint()
 
 
-import reader
+# Syntax errors
 
-buffer = reader.get_string_reader('5')
+def validate_sum(params):
+    assert params.left is not None
 
+    if params.suffix is None:
+        return
 
-import parser
+    for term in params.suffix:
+        assert term.operator is not None
 
-result = parser.parse(MY_RULES, buffer)
-print(repr(result))
-
-# breakpoint()
-
-
-import reader
-import syntax
-
-flat = syntax.coalesce(result)
-print(repr(flat))
-
-# breakpoint()
-
-
-def validate_sum(left, suffix):
-
-    pass
-
-
-def validate_product():
-    pass
-
-
-def validate_power():
-    pass
-
-
-def validate_value(*, digits, sub_expr):
-    assert digits ^ sub_expr
-
-    if sub_expr is not None:
-        assert sub_expr.left_paren == '('
-
-        if sub_expr.inner_sum is None:
+        if term.right is None:
             raise syntax.ValidationError(
-                'Value inside subexpression is missing')
+                'Right side term in add or subtract operation is missing',
+                term)
 
-        if sub_expr.right_parent is None:
+
+def validate_product(params):
+    assert params.left is not None
+
+    if params.suffix is None:
+        return
+
+    for term in params.suffix:
+        assert term.operator is not None
+
+        if term.right is None:
             raise syntax.ValidationError(
-                'Closing parenthesis for subexpression is missing')
-
-        return sub_expr.inner_sum
-    else:
-        return digits
+                'Right side term in multiply or divide operation is missing',
+                term)
 
 
-def validate_number(*values):
-    simplify this
+def validate_power(params):
+    assert params.base is not None
+
+    if params.suffix is not None:
+        assert params.suffix.operator is not None
+
+        if params.suffix.exponent is None:
+            raise syntax.ValidationError(
+                'Value for exponent is missing',
+                params.suffix)
+
+
+def validate_value(params):
+    assert (params.digits is not None) ^ (params.sub_expr is not None)
+
+    if params.sub_expr is not None:
+        assert params.sub_expr.left_paren is not None
+
+        if params.sub_expr.inner_sum is None:
+            raise syntax.ValidationError(
+                'Value inside subexpression is missing',
+                params.sub_expr)
+
+        if params.sub_expr.right_parent is None:
+            raise syntax.ValidationError(
+                'Closing parenthesis for subexpression is missing',
+                params.sub_expr)
+
+
+def validate_number(params):
+    assert params
+    assert any(params)
 
 
 ERROR_HANDLERS = {
@@ -109,6 +113,33 @@ ERROR_HANDLERS = {
 
 
 
+import reader
+
+buffer = reader.get_string_reader('(1+')
+
+
+import parser
+import syntax
+
+try:
+    result = parser.parse(MY_RULES, buffer)
+    print(repr(result))
+except parser.IncompleteParseError as e:
+    flat = syntax.coalesce(e.node)
+    try:
+        syntax.validate(ERROR_HANDLERS, flat)
+    except syntax.ValidationError as e:
+        breakpoint()
+        print(e)
+
+
+import reader
+
+flat = syntax.coalesce(result)
+print(repr(flat))
+
+
+# Interpreter
 
 def handle_sum(context, value):
     left = context.interpret(value.left)
