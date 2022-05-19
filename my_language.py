@@ -115,7 +115,9 @@ ERROR_HANDLERS = {
 
 import reader
 
+
 buffer = reader.get_string_reader('(1+')
+# buffer = reader.get_string_reader('asdf')
 
 
 import parser
@@ -131,6 +133,9 @@ except parser.IncompleteParseError as e:
     except syntax.ValidationError as e:
         breakpoint()
         print(e)
+except parser.NothingMatchesError as e:
+    breakpoint()
+    print(e)
 
 
 import reader
