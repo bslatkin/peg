@@ -109,3 +109,11 @@ def get_path_reader(path):
 
     source = Source(path, data)
     return Reader(source, 0)
+
+
+def combine_spans(values):
+    source = values[0].source
+    min_start = min(v.start for v in values)
+    max_end = max(v.end for v in values)
+    text = source.data[min_start:max_end]
+    return Value(source, text, min_start, max_end)

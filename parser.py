@@ -5,20 +5,6 @@ import parameters
 import reader
 
 
-class Error(Exception):
-    pass
-
-
-class NothingMatchesError(Error):
-    def __init__(self, remaining):
-        self.remaining = remaining
-
-
-class IncompleteParseError(Error):
-    def __init__(self, node):
-        self.node = node
-
-
 class ParseNode:
     matched = True
 
@@ -39,6 +25,10 @@ class ParseNode:
             f'value={self.value!r}, '
             f'remaining={self.remaining!r})')
 
+    def reader_value(self):
+        values = _get_reader_values(self)
+        return reader.combine_spans(values)
+
 
 class Match(ParseNode):
     pass
@@ -52,8 +42,7 @@ class Miss(ParseNode):
     pass
 
 
-# TODO: Move this to reader.py
-def get_reader_values(node):
+def _get_reader_values(node):
     if node is None:
         return []
 
@@ -61,26 +50,20 @@ def get_reader_values(node):
         return [node.value]
 
     if isinstance(node.value, ParseNode):
-        return get_reader_values(node.value)
+        return _get_reader_values(node.value)
 
     if isinstance(node.value, parameters.Params):
         result = []
         for _, other_value in node.value:
-            result.extend(get_reader_values(other_value))
+            result.extend(_get_reader_values(other_value))
         return result
 
-
-def get_combined_reader_value(node):
-    values = get_reader_values(node)
-    source = values[0].source
-    min_start = min(v.start for v in values)
-    max_end = max(v.end for v in values)
-    text = source.data[min_start:max_end]
-    return reader.Value(source, text, min_start, max_end)
+    assert False, 'Not reachable'
 
 
 # TODO: Make this a better helper class behind a flag
 DEPTH = 0
+
 
 def trace(func):
     @functools.wraps(func)
@@ -264,6 +247,7 @@ def descend_not(expr, buffer):
 
 
 def longest_reader(nodes):
+    # TODO: What happens if there are ties?
     longest_index = -1
     longest_node = None
 
@@ -336,23 +320,14 @@ def descend(item, buffer):
     return visitor(item, buffer)
 
 
-def pick_failure(failures):
-    longest_node = longest_reader(failures)
-    if longest_node.remaining.index > 0:
-        raise IncompleteParseError(longest_node)
-    else:
-        raise NothingMatchesError(longest_node.remaining)
-
-
 def parse(rules, buffer):
-    failures = []
+    partials = []
 
     for rule in rules:
         node = descend(rule, buffer)
         if isinstance(node, Match) and not node.remaining:
             return node
         else:
-            failures.append(node)
+            partials.append(node)
 
-    pick_failure(failures)
-
+    return longest_reader(partials)

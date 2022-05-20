@@ -59,13 +59,22 @@ class TestBase(unittest.TestCase):
     def setUp(self):
         self.maxDiff = None
 
-    def run_test(self, text, *, rules=None):
+    def run_test(self, text, *, rules=None, result_type=parser.Match):
         if rules is None:
             rules = get_rules()
         buffer = reader.get_string_reader(text)
         result = parser.parse(rules, buffer)
-        found = flatten(result)
-        return found
+        self.assertIsInstance(result, result_type)
+        return result
+
+    def assertRemaining(self, node, expected):
+        remaining_value, _ = node.remaining.read()
+        self.assertEqual(expected, remaining_value.text)
+
+    def assertReaderValue(self, node, *, text, lines):
+        reader_value = node.reader_value()
+        self.assertEqual(text, reader_value.text)
+        self.assertEqual(lines, reader_value.text_lines())
 
 
 class ParseSuccessTest(TestBase):
@@ -87,7 +96,9 @@ class ParseSuccessTest(TestBase):
                    (8, None),
                    (9, None)])])]),
              ('sub_expr', None)]
-        self.assertEqual(expected, found)
+        self.assertEqual(expected, flatten(found))
+
+        self.assertRemaining(found, '')
 
     def test_multiple_levels(self):
         found = self.run_test('(1+2)')
@@ -132,7 +143,9 @@ class ParseSuccessTest(TestBase):
                          ('sub_expr', None)]),
                        ('suffix', [])])])])]),
                ('right_paren', ')')])]
-        self.assertEqual(expected, found)
+        self.assertEqual(expected, flatten(found))
+
+        self.assertRemaining(found, '')
 
     def test_and_match(self):
         self.fail()
@@ -156,22 +169,12 @@ class ParseSuccessTest(TestBase):
 class ParseFailureTest(TestBase):
 
     def test_all_leftover(self):
-        with self.assertRaises(parser.NothingMatchesError) as context:
-            self.run_test('+1+2')
-
-        exc = context.exception
-
-        value, next_reader = exc.remaining.read()
-        self.assertEqual('+1+2', value.text)
-        self.assertEqual('+1+2', value.text_lines())
+        found = self.run_test('+1+2', result_type=parser.Miss)
+        self.assertIsNone(found.value)
+        self.assertRemaining(found, '+1+2')
 
     def test_trailing_leftover(self):
-        with self.assertRaises(parser.IncompleteParseError) as context:
-            self.run_test('(1+2)-')
-
-        exc = context.exception
-
-        found = flatten(exc.node)
+        found = self.run_test('(1+2)-', result_type=parser.Partial)
         expected = \
             [('left',
               [('digits', None),
@@ -216,22 +219,13 @@ class ParseFailureTest(TestBase):
                  ('right_paren', ')')])]),
              ('suffix',
                 [(0, [('operator', [(0, None), (1, '-')]), ('right', None)])])]
-        self.assertEqual(expected, found)
+        self.assertEqual(expected, flatten(found))
 
-        reader_values = parser.get_combined_reader_value(exc.node)
-        self.assertEqual('(1+2)-', reader_values.text)
-        self.assertEqual('(1+2)-', reader_values.text_lines())
-
-        value, next_reader = exc.node.remaining.read()
-        self.assertEqual('', value.text)
+        self.assertReaderValue(found, text='(1+2)-', lines='(1+2)-')
+        self.assertRemaining(found, '')
 
     def test_middle_leftover(self):
-        with self.assertRaises(parser.IncompleteParseError) as context:
-            x = self.run_test('1+nope')
-
-        exc = context.exception
-
-        found = flatten(exc.node)
+        found = self.run_test('1+nope', result_type=parser.Partial)
         expected = \
             [('left',
               [('digits',
@@ -250,22 +244,17 @@ class ParseFailureTest(TestBase):
                ('sub_expr', None)]),
              ('suffix', [(0,
                 [('operator', [(0, '+'), (1, None)]), ('right', None)])])]
-        self.assertEqual(expected, found)
+        self.assertEqual(expected, flatten(found))
 
-        reader_values = parser.get_combined_reader_value(exc.node)
-        self.assertEqual('1+', reader_values.text)
-        self.assertEqual('1+nope', reader_values.text_lines())
-
-        value, next_reader = exc.node.remaining.read()
-        self.assertEqual('nope', value.text)
+        self.assertReaderValue(found, text='1+', lines='1+nope')
+        self.assertRemaining(found, 'nope')
 
     def test_many_partial_choices(self):
-        with self.assertRaises(parser.IncompleteParseError) as context:
-            x = self.run_test('12z', rules=get_partial_choice_rules())
+        found = self.run_test(
+            '12z',
+            rules=get_partial_choice_rules(),
+            result_type=parser.Partial)
 
-        exc = context.exception
-
-        found = flatten(exc.node)
         expected = \
             [('first',
               [(0,
@@ -315,14 +304,10 @@ class ParseFailureTest(TestBase):
                  (8, None),
                  (9, None)]),
                (2, None)])]
-        self.assertEqual(expected, found)
+        self.assertEqual(expected, flatten(found))
 
-        reader_values = parser.get_combined_reader_value(exc.node)
-        self.assertEqual('12', reader_values.text)
-        self.assertEqual('12z', reader_values.text_lines())
-
-        value, next_reader = exc.node.remaining.read()
-        self.assertEqual('z', value.text)
+        self.assertReaderValue(found, text='12', lines='12z')
+        self.assertRemaining(found, 'z')
 
 
 if __name__ == '__main__':

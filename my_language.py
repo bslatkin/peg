@@ -136,6 +136,9 @@ except parser.IncompleteParseError as e:
 except parser.NothingMatchesError as e:
     breakpoint()
     print(e)
+except Exception as e:
+    # TODO: Parser bug
+    raise
 
 
 import reader
