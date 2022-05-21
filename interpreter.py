@@ -25,12 +25,8 @@ class Context:
 
 
 def interpret(handlers, context, value):
-    if isinstance(value, syntax.SyntaxNode):
-        value_type = value.rule.symbol
-        to_handle = value.value
-    else:
-        value_type = type(value)
-        to_handle = value
+    value_type = value.source.symbol
+    to_handle = coalesce(value)
 
     print(f'Interpreting: {value_type=} {to_handle=}')
 
