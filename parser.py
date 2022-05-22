@@ -6,8 +6,6 @@ import reader
 
 
 class ParseNode:
-    matched = True
-
     def __init__(self, source, value, remaining):
         assert source is not None
         assert remaining is not None
@@ -28,6 +26,45 @@ class ParseNode:
     def reader_value(self):
         values = _get_reader_values(self)
         return reader.combine_spans(values)
+
+    @property
+    def text(self):
+        return self.reader_value().text
+
+    # def __bool__(self):
+    #     if self.value is None:
+    #         return False
+
+    #     if isinstance(self.value, ParseNode):
+    #         return isinstance(self.value, Match)
+    #     elif isinstance(self.value, parameters.Params):
+    #         return len(self.value.mappings) > 0
+
+    def __getitem__(self, index_or_slice):
+        result = []
+
+        for i, (key, other_value) in enumerate(self.value):
+            assert isinstance(key, int)
+            assert i == key
+            result.append(other_value)
+
+        return result[index_or_slice]
+
+    def __getattr__(self, key):
+        if key == 'symbol':
+            raise AttributeError
+
+        if isinstance(self.value, parameters.Params):
+            if isinstance(key, str):
+                try:
+                    return getattr(self.value, key)
+                except KeyError:
+                    raise AttributeError
+            else:
+                return self.value[key]
+
+        if isinstance(self.value, ParseNode):
+            return getattr(self.value, key)
 
 
 class Match(ParseNode):
@@ -279,7 +316,7 @@ def descend_choice(expr, buffer):
 
         found.assign(key, None)
 
-    if match_node:
+    if match_node is not None:
         return Match(expr, found, match_node.remaining)
     elif partial_nodes:
         longest_partial = longest_reader(partial_nodes)
@@ -319,6 +356,8 @@ def descend(item, buffer):
     visitor = VISITORS[type(item)]
     return visitor(item, buffer)
 
+
+# TODO: This should let you pick the root rule to consider for parsing.
 
 def parse(rules, buffer):
     partials = []

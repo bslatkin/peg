@@ -38,15 +38,13 @@ MY_RULES = grammar.resolve_refs(MY_GRAMMAR)
 
 import reader
 
-buffer = reader.get_string_reader('(1+')
+buffer = reader.get_string_reader('(1+2)^3')
 
 
 import parser
 
 root = parser.parse(MY_RULES, buffer)
 
-
-# Interpreter
 
 def handle_sum(context, value):
     left = context.interpret(value.left)
@@ -71,10 +69,9 @@ def handle_sum(context, value):
 
 
 def handle_product(context, value):
-    breakpoint()
     left = context.interpret(value.left)
 
-    if value.suffix is None:
+    if not value.suffix:
         return left
 
     raise NotImplementedError
@@ -83,7 +80,7 @@ def handle_product(context, value):
 def handle_power(context, value):
     base = context.interpret(value.base)
 
-    if value.suffix is None:
+    if not value.suffix:
         return base
 
     exponent = context.interpret(value.suffix.exponent)
@@ -92,19 +89,12 @@ def handle_power(context, value):
 
 
 def handle_value(context, value):
-    if value.digits is not None:
-        return int(''.join(context.interpret(d[0]) for d in value.digits))
+    if value.digits:
+        return int(value.digits.text)
 
     assert value.sub_expr
 
     return context.interpret(value.sub_expr.inner_sum)
-
-
-def handle_number(context, value):
-    digit = value[0]
-    assert isinstance(digit, reader.Value)
-    assert len(digit.text) == 1
-    return digit.text
 
 
 INTEPRET_HANDLERS = {
@@ -112,13 +102,12 @@ INTEPRET_HANDLERS = {
     'Product': handle_product,
     'Power': handle_power,
     'Value': handle_value,
-    'Number': handle_number,
 }
 
 
-breakpoint()
-
 import interpreter
+
+# XXX: Need to test exponents and optional, it's not working
 
 context = interpreter.Context(INTEPRET_HANDLERS)
 result = context.interpret(root)

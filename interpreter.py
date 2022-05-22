@@ -2,7 +2,6 @@ import sys
 
 import parser
 import reader
-import syntax
 
 
 class Error(Exception):
@@ -26,17 +25,18 @@ class Context:
 
 def interpret(handlers, context, value):
     value_type = value.source.symbol
-    to_handle = coalesce(value)
+    to_handle = value
 
     print(f'Interpreting: {value_type=} {to_handle=}')
 
     handler = handlers[value_type]
-    try:
-        return handler(context, to_handle)
-    except InterpretError:
-        raise  # Pass through unmodified
-    except Exception as e:
-        raise InterpretError(e, to_handle)
+    return handler(context, to_handle)
+    # try:
+
+    # except InterpretError:
+    #     raise  # Pass through unmodified
+    # except Exception as e:
+    #     raise InterpretError(e, to_handle)
 
 
 def read_input():
