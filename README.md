@@ -1,0 +1,1 @@
+I was curious what it takes to build a [peg parser](https://en.wikipedia.org/wiki/Parsing_expression_grammar) and make it into a generic library. Turns out it's not as easy as it sounds, especially if you want to produce nice error messages.
